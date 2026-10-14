@@ -1,4 +1,56 @@
-const date = (value) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—";
+const date = (value) =>
+  value
+    ? new Intl.DateTimeFormat(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(value))
+    : "—";
 export default function WorkspaceList({ workspaces }) {
-  return <section className="mt-5 overflow-hidden rounded-2xl border border-[#e2e6ed] bg-white"><div className="border-b border-[#e8ebf0] p-5"><h2 className="m-0 text-[17px] font-bold">Registered businesses</h2><p className="mt-1 text-[11px] text-[#7c889d]">Platform-level setup and activity metadata.</p></div>{workspaces.length===0?<div className="grid min-h-60 place-items-center text-xs text-[#8995a8]">No workspaces found.</div>:<div className="overflow-x-auto"><div className="grid min-w-[830px] grid-cols-[1.4fr_repeat(4,.55fr)_1fr] gap-3 bg-[#fafbfc] px-5 py-4 text-[8px] font-black uppercase tracking-wide text-[#8b96a8]"><span>Business</span><span>Business AI</span><span>Team</span><span>Workflows</span><span>ArmorIQ holds</span><span>Last activity</span></div>{workspaces.map((workspace)=><div className="grid min-w-[830px] grid-cols-[1.4fr_repeat(4,.55fr)_1fr] items-center gap-3 border-b border-[#edf0f4] px-5 py-4 text-[11px] text-[#56657d] last:border-0" key={workspace.workspaceId}><strong className="text-xs text-[#172641]">{workspace.businessName}</strong><span className={`w-max rounded-full px-2.5 py-1.5 text-[8px] font-black uppercase ${workspace.aiStatus==="published"?"bg-[#e8f6ee] text-[#147849]":"bg-[#eef1f5]"}`}>{workspace.aiStatus}</span><span>{workspace.teamSize}</span><span>{workspace.workflowCount}</span><span>{workspace.heldCount}</span><small className="text-[10px] text-[#7a879a]">{date(workspace.lastActivity)}</small></div>)}</div>}</section>;
+  return (
+    <section className="mt-5 overflow-hidden rounded-2xl border border-[#e2e6ed] bg-white">
+      <div className="border-b border-[#e8ebf0] p-5">
+        <h2 className="m-0 text-[17px] font-bold">Registered businesses</h2>
+        <p className="mt-1 text-[11px] text-[#7c889d]">
+          Platform-level setup and activity metadata.
+        </p>
+      </div>
+      {workspaces.length === 0 ? (
+        <div className="grid min-h-60 place-items-center text-xs text-[#8995a8]">
+          No workspaces found.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="grid min-w-[830px] grid-cols-[1.4fr_repeat(4,.55fr)_1fr] gap-3 bg-[#fafbfc] px-5 py-4 text-[8px] font-black uppercase tracking-wide text-[#8b96a8]">
+            <span>Business</span>
+            <span>Business AI</span>
+            <span>Team</span>
+            <span>Workflows</span>
+            <span>ArmorIQ holds</span>
+            <span>Last activity</span>
+          </div>
+          {workspaces.map((workspace) => (
+            <div
+              className="grid min-w-[830px] grid-cols-[1.4fr_repeat(4,.55fr)_1fr] items-center gap-3 border-b border-[#edf0f4] px-5 py-4 text-[11px] text-[#56657d] last:border-0"
+              key={workspace.workspaceId}
+            >
+              <strong className="text-xs text-[#172641]">
+                {workspace.businessName}
+              </strong>
+              <span
+                className={`w-max rounded-full px-2.5 py-1.5 text-[8px] font-black uppercase ${workspace.aiStatus === "published" ? "bg-[#e8f6ee] text-[#147849]" : "bg-[#eef1f5]"}`}
+              >
+                {workspace.aiStatus}
+              </span>
+              <span>{workspace.teamSize}</span>
+              <span>{workspace.workflowCount}</span>
+              <span>{workspace.heldCount}</span>
+              <small className="text-[10px] text-[#7a879a]">
+                {date(workspace.lastActivity)}
+              </small>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }

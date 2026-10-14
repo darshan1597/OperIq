@@ -14,4 +14,5 @@ router.get("/businesses/:slug/customer-bookings", asyncHandler(getCustomerBookin
 router.get("/businesses/:slug/customer-status", asyncHandler(getCustomerStatus));
 router.get("/businesses/:slug/reschedule-availability", asyncHandler(getRescheduleAvailability));
 router.post("/businesses/:slug/reschedule-requests", asyncHandler(requestPublicReschedule));
+
 export default router;

@@ -12,53 +12,74 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-export function OverviewHero({ user, onRequest, onWorkflow, canUseAgents = true }) {
+export function OverviewHero({
+  user,
+  onRequest,
+  onWorkflow,
+  canUseAgents = true,
+}) {
   const [request, setRequest] = useState("");
   return (
     <section className="overview-hero ![order:0] !grid ![grid-template-columns:1fr_1.35fr] !gap-[35px] !items-center !mt-0 !mx-0 !mb-[25px] wide:![grid-template-columns:.95fr_1.4fr] wide:!mb-[23px] laptop:![grid-template-columns:1fr_1.1fr] laptop:!gap-5 compact:![grid-template-columns:1fr] compact:!gap-5">
       <div className="hero-copy [&_.greeting]:!text-[#13223e] [&_.greeting]:!text-sm [&_.greeting]:!font-600 [&_.greeting]:!mb-1 [&_h1]:!text-[#09152e] [&_h1]:!text-[clamp(26px,2.3vw,40px)] [&_h1]:!leading-[1.16] [&_h1]:!font-800 [&_h1]:!tracking-[-1.6px] [&_h1_span]:!text-orange [&>p:last-child]:!text-[#64728e] [&>p:last-child]:!text-sm [&>p:last-child]:!leading-[1.55] [&>p:last-child]:!mt-3 wide:[&_h1]:!text-[39px] laptop:[&>p:last-child]:!text-xs compact:[&_h1]:!text-[34px] mobile:[&_h1]:!text-3xl mobile:[&_h1]:!max-w-[330px] mobile:[&_.greeting]:!text-xs mobile:[&>p:last-child]:!text-xs">
         <p className="greeting">
-          Hello, {user?.name?.split(" ")[0] || "there"} <span aria-hidden="true">👋</span>
+          Hello, {user?.name?.split(" ")[0] || "there"}{" "}
+          <span aria-hidden="true">👋</span>
         </p>
         <h1>
           Your business, <span>in motion.</span>
         </h1>
         <p>
           OperIQ coordinates your people, customers and operations —
-          <br className="desktop-break mobile:!hidden" /> so you can focus
-          on growth.
+          <br className="desktop-break mobile:!hidden" /> so you can focus on
+          growth.
         </p>
       </div>
-      {canUseAgents ? <div className="ask-panel !bg-white !border !border-border !rounded-[13px] !py-3 !px-3.5 [&_form]:!flex [&_form]:!items-center [&_form]:!gap-3.5 [&_form]:!p-[0_0_12px_6px] [&_form]:!border-b [&_form]:!border-[#f0f1f5] [&_form]:!text-orange [&_input]:![flex:1] [&_input]:!min-w-0 [&_input]:!py-2.5 [&_input]:!px-0 [&_input]:![border:none] [&_input]:!text-navy [&_input]:!text-13 [&_input]:!bg-transparent [&_input::placeholder]:!text-[#6c7897] [&_form_button]:!bg-orange [&_form_button]:!text-white [&_form_button]:!rounded-[10px] [&_form_button]:!w-[46px] [&_form_button]:!h-[46px] [&_form_button]:!grid [&_form_button]:!place-items-center mobile:!p-2.5 mobile:[&_form]:!gap-2 mobile:[&_form]:!pl-0 mobile:[&_input]:!text-tiny mobile:[&_form>svg]:!w-[19px] mobile:[&_form_button]:!h-[37px] mobile:[&_form_button]:!w-[37px] mobile:[&_form_button]:!rounded-lg mobile:[&_form_button]:![flex-shrink:0]">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            onRequest(request.trim());
-          }}
-        >
-          <Sparkles size={23} />
-          <input
-            aria-label="Ask OperIQ anything"
-            placeholder="Ask OperIQ anything…"
-            value={request}
-            onChange={(event) => setRequest(event.target.value)}
-          />
-          <button type="submit" aria-label="Prepare an OperIQ request">
-            <Send size={20} />
-          </button>
-        </form>
-        <div className="suggested-requests !flex !gap-[7px] !pt-[11px] !flex-wrap [&_button]:!border [&_button]:!border-[#e7ebf3] [&_button]:!rounded-[20px] [&_button]:!bg-[#f8faff] [&_button]:!text-[#243754] [&_button]:!text-2xs [&_button]:!py-[7px] [&_button]:!px-[11px] mobile:!gap-1.5 mobile:[&_button]:!text-caption mobile:[&_button]:!py-[7px] mobile:[&_button]:!px-[9px]">
-          <button onClick={() => onWorkflow("absence")}>
-            Handle staff absence
-          </button>
-          <button onClick={() => onWorkflow("enquiry")}>
-            Manage appointment enquiries
-          </button>
-          <button onClick={() => onWorkflow("complaint")}>
-            Resolve a complaint
-          </button>
+      {canUseAgents ? (
+        <div className="ask-panel !bg-white !border !border-border !rounded-[13px] !py-3 !px-3.5 [&_form]:!flex [&_form]:!items-center [&_form]:!gap-3.5 [&_form]:!p-[0_0_12px_6px] [&_form]:!border-b [&_form]:!border-[#f0f1f5] [&_form]:!text-orange [&_input]:![flex:1] [&_input]:!min-w-0 [&_input]:!py-2.5 [&_input]:!px-0 [&_input]:![border:none] [&_input]:!text-navy [&_input]:!text-13 [&_input]:!bg-transparent [&_input::placeholder]:!text-[#6c7897] [&_form_button]:!bg-orange [&_form_button]:!text-white [&_form_button]:!rounded-[10px] [&_form_button]:!w-[46px] [&_form_button]:!h-[46px] [&_form_button]:!grid [&_form_button]:!place-items-center mobile:!p-2.5 mobile:[&_form]:!gap-2 mobile:[&_form]:!pl-0 mobile:[&_input]:!text-tiny mobile:[&_form>svg]:!w-[19px] mobile:[&_form_button]:!h-[37px] mobile:[&_form_button]:!w-[37px] mobile:[&_form_button]:!rounded-lg mobile:[&_form_button]:![flex-shrink:0]">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              onRequest(request.trim());
+            }}
+          >
+            <Sparkles size={23} />
+            <input
+              aria-label="Ask OperIQ anything"
+              placeholder="Ask OperIQ anything…"
+              value={request}
+              onChange={(event) => setRequest(event.target.value)}
+            />
+            <button type="submit" aria-label="Prepare an OperIQ request">
+              <Send size={20} />
+            </button>
+          </form>
+          <div className="suggested-requests !flex !gap-[7px] !pt-[11px] !flex-wrap [&_button]:!border [&_button]:!border-[#e7ebf3] [&_button]:!rounded-[20px] [&_button]:!bg-[#f8faff] [&_button]:!text-[#243754] [&_button]:!text-2xs [&_button]:!py-[7px] [&_button]:!px-[11px] mobile:!gap-1.5 mobile:[&_button]:!text-caption mobile:[&_button]:!py-[7px] mobile:[&_button]:!px-[9px]">
+            <button onClick={() => onWorkflow("absence")}>
+              Handle staff absence
+            </button>
+            <button onClick={() => onWorkflow("enquiry")}>
+              Manage appointment enquiries
+            </button>
+            <button onClick={() => onWorkflow("complaint")}>
+              Resolve a complaint
+            </button>
+          </div>
         </div>
-      </div> : <div className="rounded-2xl border border-[#e3e8f0] bg-white p-5"><span className="text-[10px] font-bold uppercase tracking-widest text-orange">{user.role} access</span><h3 className="mt-2 text-base font-bold text-navy">Your workspace view is ready.</h3><p className="mt-2 text-xs leading-6 text-[#71809b]">You can access the schedules and operational work assigned to your role. Sensitive business controls remain with owners and managers.</p></div>}
+      ) : (
+        <div className="rounded-2xl border border-[#e3e8f0] bg-white p-5">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-orange">
+            {user.role} access
+          </span>
+          <h3 className="mt-2 text-base font-bold text-navy">
+            Your workspace view is ready.
+          </h3>
+          <p className="mt-2 text-xs leading-6 text-[#71809b]">
+            You can access the schedules and operational work assigned to your
+            role. Sensitive business controls remain with owners and managers.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

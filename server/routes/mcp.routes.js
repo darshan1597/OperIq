@@ -4,4 +4,5 @@ import { asyncHandler } from "../utils/async-handler.js";
 
 const router = Router();
 router.post("/", asyncHandler(handleMcp));
+
 export default router;

@@ -348,11 +348,7 @@ export async function runWorkflow({
                         executed: false,
                     };
                 }
-                // Tool results can contain the complete workspace (notably
-                // read_workspace). Persisting that payload inside the workspace's
-                // own event history causes recursive document growth. The event
-                // keeps the governance decision and request metadata; consumers
-                // receive the live result through `outcome` when needed.
+                
                 const { continuation, data: _toolResult, ...storedOutcome } = outcome;
                 const eventId = randomUUID();
                 await mutate(workspaceId, (s) => {

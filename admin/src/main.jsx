@@ -5,4 +5,9 @@ import App from "./App.jsx";
 import "./index.css";
 import RequestActivity from "./components/RequestActivity.jsx";
 
-createRoot(document.getElementById("root")).render(<BrowserRouter><RequestActivity/><App /></BrowserRouter>);
+createRoot(document.getElementById("root")).render(
+  <BrowserRouter>
+    <RequestActivity />
+    <App />
+  </BrowserRouter>,
+);

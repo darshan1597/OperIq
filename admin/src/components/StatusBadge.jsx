@@ -8,7 +8,11 @@ const styles = {
 };
 
 export default function StatusBadge({ status, icon: Icon }) {
-  return <span className={`inline-flex w-max items-center gap-1.5 rounded-full px-2.5 py-2 text-[9px] font-black uppercase ${styles[status] || "bg-[#edf6f0] text-[#16804d]"}`}>
-    {Icon && <Icon size={14}/>} {status}
-  </span>;
+  return (
+    <span
+      className={`inline-flex w-max items-center gap-1.5 rounded-full px-2.5 py-2 text-[9px] font-black uppercase ${styles[status] || "bg-[#edf6f0] text-[#16804d]"}`}
+    >
+      {Icon && <Icon size={14} />} {status}
+    </span>
+  );
 }

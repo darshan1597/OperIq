@@ -3,11 +3,9 @@ node_modules/
 dist/
 coverage/
 
-# Local environment files (keep safe templates)
+# Local environment files
 .env
 .env.*
-!.env.example
-!**/.env.example
 
 # Credentials and private keys
 *-firebase-adminsdk-*.json

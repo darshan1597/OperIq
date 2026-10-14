@@ -20,70 +20,89 @@ export default function SchedulePage(props) {
           Appointments
         </span>
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-[#ffd9c3] bg-[#fffaf6] px-3 py-2.5 text-xs font-semibold text-[#cf440a]" onClick={() => start("conflict")}>
+          <button
+            className="inline-flex items-center gap-2 rounded-lg border border-[#ffd9c3] bg-[#fffaf6] px-3 py-2.5 text-xs font-semibold text-[#cf440a]"
+            onClick={() => start("conflict")}
+          >
             <ShieldCheck size={15} /> Scan conflicts
           </button>
           <SearchBox query={query} setQuery={setQuery} />
         </div>
       </div>
-      {!appointments.length ? <Empty icon={CalendarDays} title={query ? "No appointments match your search" : "No appointments scheduled"} text={query ? "Try searching with a different customer, service, or date." : "Appointments will appear here after they are added or proposed."} /> : <div className="table-scroll overflow-x-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Date & time</th>
-              <th>Customer</th>
-              <th>Service</th>
-              <th>Staff</th>
-              <th>Status</th>
-              <th>Customer response · sandbox</th>
-            </tr>
-          </thead>
-          <tbody>
-            {appointments.map((b) => (
-              <tr key={b.id}>
-                <td>
-                  <strong>{b.time}</strong>
-                  <small>{b.date}</small>
-                </td>
-                <td>{customer(b.customerId)?.name}</td>
-                <td>{b.service}</td>
-                <td>{staff(b.staffId)?.name}</td>
-                <td>{badge(b.status)}</td>
-                <td>
-                  {b.status === "Awaiting customer" ? (
-                    <div className="button-row flex gap-2.5 items-center">
-                      <button
-                        className="secondary inline-flex items-center justify-center gap-1.5 bg-white text-[#47613b] border border-[#dce5d7] rounded-md py-2.5 px-3.5 text-xs !text-[#cf440a] !border-[#ffd9c3] !rounded-lg !bg-[#fffaf6] compact py-2 px-2.5 text-tiny"
-                        onClick={() =>
-                          action(`/appointments/${b.id}/respond`, {
-                            accept: true,
-                          })
-                        }
-                      >
-                        Accept
-                      </button>
-                      <button
-                        className="text-button inline-flex items-center gap-1.5 bg-transparent p-0 text-[#829274] text-2xs whitespace-nowrap !text-[#f4510c] !text-tiny"
-                        onClick={() =>
-                          action(`/appointments/${b.id}/respond`, {
-                            accept: false,
-                          })
-                        }
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="muted text-[#9ba391] text-caption tracking-[1px] !text-[#8a95ab]">
-                      —
-                    </span>
-                  )}
-                </td>
+      {!appointments.length ? (
+        <Empty
+          icon={CalendarDays}
+          title={
+            query
+              ? "No appointments match your search"
+              : "No appointments scheduled"
+          }
+          text={
+            query
+              ? "Try searching with a different customer, service, or date."
+              : "Appointments will appear here after they are added or proposed."
+          }
+        />
+      ) : (
+        <div className="table-scroll overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Date & time</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Staff</th>
+                <th>Status</th>
+                <th>Customer response · sandbox</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>}
+            </thead>
+            <tbody>
+              {appointments.map((b) => (
+                <tr key={b.id}>
+                  <td>
+                    <strong>{b.time}</strong>
+                    <small>{b.date}</small>
+                  </td>
+                  <td>{customer(b.customerId)?.name}</td>
+                  <td>{b.service}</td>
+                  <td>{staff(b.staffId)?.name}</td>
+                  <td>{badge(b.status)}</td>
+                  <td>
+                    {b.status === "Awaiting customer" ? (
+                      <div className="button-row flex gap-2.5 items-center">
+                        <button
+                          className="secondary inline-flex items-center justify-center gap-1.5 bg-white text-[#47613b] border border-[#dce5d7] rounded-md py-2.5 px-3.5 text-xs !text-[#cf440a] !border-[#ffd9c3] !rounded-lg !bg-[#fffaf6] compact py-2 px-2.5 text-tiny"
+                          onClick={() =>
+                            action(`/appointments/${b.id}/respond`, {
+                              accept: true,
+                            })
+                          }
+                        >
+                          Accept
+                        </button>
+                        <button
+                          className="text-button inline-flex items-center gap-1.5 bg-transparent p-0 text-[#829274] text-2xs whitespace-nowrap !text-[#f4510c] !text-tiny"
+                          onClick={() =>
+                            action(`/appointments/${b.id}/respond`, {
+                              accept: false,
+                            })
+                          }
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="muted text-[#9ba391] text-caption tracking-[1px] !text-[#8a95ab]">
+                        —
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }
