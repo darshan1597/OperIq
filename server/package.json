@@ -1,14 +1,15 @@
 {
-  "name": "opsdesk-server",
+  "name": "operiq-server",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch --env-file-if-exists=.env index.js",
+    "dev": "nodemon --exec \"node --env-file-if-exists=.env\" index.js",
     "dev:test": "node test-server.js",
     "start": "node --env-file-if-exists=.env index.js",
     "test": "node --test test/*.test.js",
-    "mcp": "node --env-file-if-exists=.env mcp.js"
+    "mcp": "node --env-file-if-exists=.env mcp.js",
+    "seed:admin": "node --env-file-if-exists=.env scripts/seedAdmin.js"
   },
   "dependencies": {
     "@armoriq/sdk": "latest",
@@ -19,6 +20,10 @@
     "firebase-admin": "^14.5.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.12.1",
+    "nodemailer": "^10.1.0",
     "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

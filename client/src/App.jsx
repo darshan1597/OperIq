@@ -37,6 +37,7 @@ import {
   Briefcase,
   PanelLeftClose,
   LogOut,
+  KeyRound,
 } from "lucide-react";
 import { LogoMark, BrandWordmark } from "./pages/components/Brand.jsx";
 import {
@@ -57,7 +58,15 @@ import AuthPage from "./pages/AuthPage.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import AISetupPage from "./pages/AISetupPage.jsx";
 import BusinessPortalPage from "./pages/BusinessPortalPage.jsx";
-import { apiClient, apiError } from "./api/client.js";
+import AccessPage from "./pages/AccessPage.jsx";
+import InvitePage from "./pages/InvitePage.jsx";
+import {
+  apiClient,
+  apiError,
+  clearAuthToken,
+  readAuthToken,
+  storeAuthToken,
+} from "./api/client.js";
 const routeByPage = {
   Overview: "/app",
   Customers: "/app/customers",
@@ -68,6 +77,7 @@ const routeByPage = {
   "Agent activity": "/app/agent-activity",
   Profile: "/app/profile",
   "Teach your AI": "/app/ai-setup",
+  "Team access": "/app/access",
 };
 const nav = [
   ["Overview", LayoutDashboard],
@@ -78,8 +88,15 @@ const nav = [
   ["Approvals", ShieldCheck],
   ["Agent activity", Activity],
   ["Teach your AI", Sparkles],
+  ["Team access", KeyRound],
   ["Profile", UserRound],
 ];
+const pagesByRole = {
+  owner: nav.map(([name]) => name),
+  manager: ["Overview", "Customers", "Schedule", "Team & tasks", "Conversations", "Approvals", "Agent activity"],
+  receptionist: ["Overview", "Customers", "Schedule", "Team & tasks", "Conversations"],
+  staff: ["Overview", "Schedule", "Team & tasks"],
+};
 const prompts = {
   enquiry:
     "Review the current customer enquiries, identify an available staff member, and prepare the appropriate follow-up.",
@@ -87,6 +104,10 @@ const prompts = {
     "Coordinate coverage for an unavailable staff member and prepare alternative arrangements for affected customers. Do not change confirmed bookings without customer consent.",
   complaint:
     "Review an open customer complaint, prepare a response, assign a follow-up task, and request approval for any proposed compensation.",
+  access:
+    "Invite the listed email addresses to this workspace. Respect any roles I specify. For emails without a role, balance manager, receptionist, and staff counts as evenly as possible. Never assign owner access.",
+  conflict:
+    "Inspect the current schedule for overlapping appointments or unavailable assigned staff. Suggest the safest valid alternative and prepare one resolution for owner approval. Do not change any booking yet.",
 };
 const agents = [
   {
@@ -119,19 +140,20 @@ export default function App() {
     [page, setPage] = useState("Overview"),
     [query, setQuery] = useState(""),
     [modal, setModal] = useState(false),
-    [workflow, setWorkflow] = useState("enquiry"),
-    [goal, setGoal] = useState(prompts.enquiry),
+    [goal, setGoal] = useState(""),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
     [probe, setProbe] = useState(false),
-    [token, setToken] = useState(localStorage.getItem("opsdesk-jwt") || "");
+    [selectedWorkflow, setSelectedWorkflow] = useState("auto"),
+    [askAnswer, setAskAnswer] = useState(""),
+    [token, setToken] = useState(readAuthToken);
   const routerNavigate = useNavigate();
   const location = useLocation();
-  const api = async (path, body, method = "POST") => (await apiClient.request({url:path,method:body?method:"GET",data:body})).data;
-  const load = async () => {
+  const api = async (path, body, method = "POST", config = {}) => (await apiClient.request({url:path,method:body?method:"GET",data:body,...config})).data;
+  const load = async (showProgress = true) => {
     try {
-      setData(await api("/workspace"));
+      setData(await api("/workspace", undefined, "GET", { trackProgress: showProgress, progressLabel: "Loading your workspace…" }));
       setError("");
     } catch (e) {
       if (e.response?.status === 401) logout();
@@ -147,7 +169,7 @@ export default function App() {
   useEffect(() => {
     if (!token) return;
     load();
-    const timer = setInterval(load, 4000);
+    const timer = setInterval(() => load(false), 4000);
     return () => clearInterval(timer);
   }, [token]);
   useEffect(() => {
@@ -157,8 +179,8 @@ export default function App() {
   }, [notice]);
   const action = async (path, body, method) => {
     try {
-      await api(path, body, method);
-      await load();
+      await api(path, body, method, { progressLabel: "Saving the workspace change…" });
+      await load(false);
       setNotice("Workspace updated");
     } catch (e) {
       setNotice(apiError(e));
@@ -167,31 +189,47 @@ export default function App() {
   const run = async () => {
     setBusy(true);
     try {
-      await api("/runs", {
+      if (selectedWorkflow === "auto" && !probe) {
+        const quick = await api("/ask", { question: goal }, "POST", { progressLabel: "Reading workspace data and preparing the answer…" });
+        if (quick.kind === "answer") {
+          setAskAnswer(quick.answer);
+          return;
+        }
+      }
+      const result = await api("/runs", {
         goal,
-        workflow,
+        workflow: selectedWorkflow,
         securityProbe: probe,
-      });
-      await load();
+      }, "POST", { progressLabel: "Planning and running the governed workflow…" });
+      await load(false);
       setModal(false);
-      navigate("Agent activity");
-      setNotice("Workflow finished. Review the execution records.");
+      const preparedInvitation = result.steps?.some(
+        (step) => step.action === "prepare_member_invites",
+      );
+      navigate(preparedInvitation ? "Approvals" : "Agent activity");
+      setNotice(preparedInvitation && result.status === "Completed"
+        ? "Invitation proposal prepared. Review it before any email is sent."
+        : result.status === "Held"
+          ? "ArmorIQ is holding a platform action for administrator review."
+          : "Workflow finished. Review the execution records.");
     } catch (e) {
       setNotice(apiError(e));
-      await load();
+      await load(false);
     } finally {
       setBusy(false);
     }
   };
   const start = (w) => {
-    setWorkflow(w);
     setGoal(prompts[w]);
+    setSelectedWorkflow(w);
+    setAskAnswer("");
     setProbe(false);
     setModal(true);
   };
   const ask = (request) => {
-    setWorkflow("enquiry");
-    setGoal(request || prompts.enquiry);
+    setGoal(request || "");
+    setSelectedWorkflow("auto");
+    setAskAnswer("");
     setProbe(false);
     setModal(true);
   };
@@ -200,8 +238,8 @@ export default function App() {
     setQuery(search);
     routerNavigate(routeByPage[name] || "/");
   };
-  const authenticated = ({token:nextToken}) => {localStorage.setItem("opsdesk-jwt",nextToken);setToken(nextToken);setData(null);};
-  const logout = () => {localStorage.removeItem("opsdesk-jwt");setToken("");setData(null);setError("");routerNavigate("/");};
+  const authenticated = ({token:nextToken}) => {storeAuthToken(nextToken);setToken(nextToken);setData(null);};
+  const logout = () => {clearAuthToken();setToken("");setData(null);setError("");routerNavigate("/");};
   const customer = (id) => data?.customers.find((c) => c.id === id);
   const staff = (id) => data?.staff.find((c) => c.id === id);
   const pending = data?.approvals.filter((a) => a.status === "Pending") || [];
@@ -211,7 +249,7 @@ export default function App() {
     );
   const badge = (text) => (
     <span
-      className={`badge inline-flex items-center rounded-sm py-1 px-1.5 text-caption whitespace-nowrap font-500 !text-caption !font-500 !rounded-md !py-1.5 !px-2 ${/Blocked|Failed|Rejected|Unavailable/.test(text) ? "red bg-[#fbeae6] text-[#b27365] !bg-[#ffe9eb] !text-[#e83f4c]" : /Confirmed|Completed|Active|Approved|Available|Done|Reviewed/.test(text) ? "green bg-[#f0f5e9] text-[#81956b] !bg-[#e7f5ec] !text-[#087344]" : /Pending|Awaiting|Follow-up|Held/.test(text) ? "amber bg-[#faf2df] text-[#ac9253] !bg-[#fff0de] !text-[#d35009]" : "neutral bg-[#f2f2ee] text-[#929783] !bg-[#eff1f5] !text-[#586780]"}`}
+      className={`badge inline-flex items-center rounded-sm py-1 px-1.5 text-caption whitespace-nowrap font-500 !text-caption !font-500 !rounded-md !py-1.5 !px-2 ${/Blocked|Failed|Rejected|Unavailable|Expired/.test(text) ? "red bg-[#fbeae6] text-[#b27365] !bg-[#ffe9eb] !text-[#e83f4c]" : /Confirmed|Completed|Active|Approved|Available|Done|Reviewed/.test(text) ? "green bg-[#f0f5e9] text-[#81956b] !bg-[#e7f5ec] !text-[#087344]" : /Pending|Awaiting|Follow-up|Held|Processing/.test(text) ? "amber bg-[#faf2df] text-[#ac9253] !bg-[#fff0de] !text-[#d35009]" : "neutral bg-[#f2f2ee] text-[#929783] !bg-[#eff1f5] !text-[#586780]"}`}
     >
       {text}
     </span>
@@ -228,14 +266,16 @@ export default function App() {
   const hostPortal = window.location.hostname.endsWith(".operiq.tech") && !["www", "app"].includes(hostParts[0]) ? hostParts[0] : "";
   const portalSlug = pathPortal || hostPortal;
   if (portalSlug) return <BusinessPortalPage slug={portalSlug} />;
-  if (location.pathname === "/") return <LandingPage navigate={routerNavigate} />;
+  const inviteToken = location.pathname.match(/^\/invite\/([a-f0-9-]+)\/?$/i)?.[1];
+  if (inviteToken) return token ? <Navigate to="/app" replace /> : <InvitePage token={inviteToken} onAuthenticated={authenticated} />;
+  if (location.pathname === "/") return <LandingPage navigate={routerNavigate} authenticated={Boolean(token)} />;
   if (["/login", "/signup"].includes(location.pathname)) return token ? <Navigate to="/app" replace /> : <AuthPage mode={location.pathname.slice(1)} onAuthenticated={authenticated} navigate={routerNavigate} />;
   if (!token) return <Navigate to="/login" replace />;
   if (!data)
     return (
       <div className="loading min-h-screen flex items-center justify-center flex-col gap-5 [&_h2]:text-2xl [&_p]:text-[#8d9d7c] [&_input]:p-3 [&_input]:w-[300px] [&_input]:border [&_input]:border-border [&_input]:rounded-md [&_button]:py-3 [&_button]:px-5 [&_button]:bg-[var(--forest)] [&_button]:text-white [&_button]:rounded-md [&_p]:!text-[#71809b] [&_input]:!bg-white [&_input]:!text-navy">
         <LogoMark />
-        <h2>Opening OperIq</h2>
+        <h2>Opening OperIQ</h2>
         <p>{error || "Preparing your workspace…"}</p>
         {error && <><button onClick={load}>Retry connection</button><button onClick={logout}>Sign out</button></>}
       </div>
@@ -245,6 +285,8 @@ export default function App() {
   );
   const title =
     page === "Overview" ? "A little clarity. A lot of progress." : page;
+  const allowedPages = pagesByRole[data.user.role] || pagesByRole.staff;
+  const canUseAgents = ["owner", "manager"].includes(data.user.role);
   const pageProps = {
     data,
     appointments,
@@ -256,8 +298,8 @@ export default function App() {
     pending,
     action,
     start,
+    ask,
     navigate,
-    setWorkflow,
     setGoal,
     setModal,
     agents,
@@ -286,7 +328,7 @@ export default function App() {
         </a>
         <button
           className="workspace flex items-center gap-2.5 w-full py-3 px-[9px] border border-border rounded-[9px] bg-white text-left text-[#2c3c34] mb-[33px] [&>span:nth-child(2)]:[flex:1] [&_strong]:text-xs [&_small]:text-2xs [&_small]:mt-1 tablet:hidden !py-[13px] !px-[9px] !rounded-[11px] !mb-3 [&_strong]:!text-xs [&_strong]:!text-navy [&_small]:!text-[#738099] [&_small]:!text-tiny"
-          onClick={() => navigate("Profile")}
+          onClick={() => navigate(data.user.role === "owner" ? "Profile" : "Overview")}
           aria-label={`Open ${data.business.name} profile`}
         >
           <span className="workspace-logo bg-[#f0eee6] text-[#746d55] rounded-[7px] font-display text-lg font-700 w-[33px] h-[34px] grid place-items-center !font-ui !bg-[#fff0df] !text-orange !w-[35px] !h-[35px]">
@@ -302,7 +344,7 @@ export default function App() {
           WORKSPACE
         </div>
         <nav>
-          {nav.map(([name, Icon]) => (
+          {nav.filter(([name]) => allowedPages.includes(name)).map(([name, Icon]) => (
             <button
               key={name}
               title={name}
@@ -367,8 +409,27 @@ export default function App() {
           </div>
         </header>
         <div className="content max-w-[1490px] m-[auto] pt-[38px] px-[38px] pb-0 wide:pt-12 desktop:pt-7 desktop:px-6 desktop:pb-0 phone:pt-6 phone:px-[15px] phone:pb-0 !max-w-[1660px] !pt-[15px] !px-10 !pb-0 wide:!pt-[7px] wide:!px-[55px] wide:!pb-0 laptop:!pt-[15px] laptop:!px-[26px] laptop:!pb-0 mobile:!pt-[17px] mobile:!px-4 mobile:!pb-0">
+          {data.aiProfile?.platformStatus === "paused" && (
+            <div className="mb-5 flex items-start gap-3 rounded-2xl border border-[#f3b9ad] bg-[#fff1ee] p-4 text-[#9f2f20] shadow-sm" role="alert">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#ffdcd5]">
+                <AlertCircle size={19} />
+              </span>
+              <div>
+                <strong className="block text-sm">Business AI paused by OperIQ</strong>
+                <p className="mt-1 text-xs leading-5 text-[#a44b3f]">
+                  Your public assistant and customer AI actions are temporarily unavailable.
+                  {data.aiProfile.platformStatusReason ? ` Reason: ${data.aiProfile.platformStatusReason}` : ""}
+                </p>
+                {data.aiProfile.platformStatusChangedAt && (
+                  <small className="mt-1 text-[#a76a61]">
+                    Paused {new Date(data.aiProfile.platformStatusChangedAt).toLocaleString()}
+                  </small>
+                )}
+              </div>
+            </div>
+          )}
           {page === "Overview" && (
-            <OverviewHero user={data.user} onRequest={ask} onWorkflow={start} />
+            <OverviewHero user={data.user} onRequest={ask} onWorkflow={start} canUseAgents={canUseAgents} />
           )}
           <div className="page-heading flex items-center justify-between gap-5 mb-[30px] [&_h1]:text-[27px] [&_h1]:tracking-[-1.1px] [&_h1]:font-650 [&_h1]:leading-[1.3] [&_p]:text-xs [&_p]:text-[#92998f] [&_p]:mt-2.5 wide:mb-[38px] desktop:[&_h1]:text-[23px] tablet:[&_h1]:text-2xl phone:items-start phone:flex-col phone:gap-[18px] phone:[&_h1]:text-[25px] phone:[&_h1]:max-w-[270px] phone:[&_p]:leading-loose phone:[&_p]:text-tiny phone:[&_.primary]:py-2.5 phone:[&_.primary]:px-3.5 !mt-4 !mx-0 !mb-[30px] [&_h1]:!text-[#0b1835] [&_h1]:!font-750 [&_h1]:!text-3xl [&_p]:!text-13 [&_p]:!text-[#71809b]">
             <div>
@@ -393,21 +454,23 @@ export default function App() {
                         "Every request, decision, and outcome in one place.",
                       "Teach your AI":
                         "Add your knowledge, define its boundaries, and publish it for customers.",
+                      "Team access":
+                        "Control who can enter this workspace and what each person can do.",
                       Profile:
                         "Manage your account and business identity.",
                     }[page]}
               </p>
             </div>
-            <button
+            {canUseAgents && <button
               className="primary inline-flex items-center justify-center gap-2 bg-[var(--forest)] text-white border border-[var(--forest)] py-3 px-4 rounded-lg text-tiny font-500 whitespace-nowrap !bg-orange !border-orange !rounded-lg !text-xs !py-3 !px-4 !shadow-[0_3px_7px_#ff550b0b] [&:hover:not(:disabled)]:!shadow-[0_5px_15px_#ff550b25]"
-              onClick={() => start("enquiry")}
+              onClick={() => ask("")}
             >
               <Sparkles size={16} />
-              Ask OperIq{" "}
+              Ask OperIQ{" "}
               <span className="shortcut py-[3px] px-1 border border-[#ffffff25] rounded-[3px] text-[#cad8c9] text-caption ml-[9px] desktop:hidden !text-[#fff2e8] !border-[#ffffff55]">
                 ⌘ K
               </span>
-            </button>
+            </button>}
           </div>
           {error && (
             <div className="error-banner p-3 bg-[#faeee7] text-[#ac7c63] rounded-md mb-5 !bg-[#ffefeb] !text-[#c44b2d]">
@@ -419,36 +482,37 @@ export default function App() {
               <Route path="/app" element={<OverviewPage {...pageProps} />} />
               <Route
                 path="/app/customers"
-                element={<CustomersPage {...pageProps} />}
+                element={allowedPages.includes("Customers") ? <CustomersPage {...pageProps} /> : <Navigate to="/app" replace />}
               />
               <Route
                 path="/app/schedule"
-                element={<SchedulePage {...pageProps} />}
+                element={allowedPages.includes("Schedule") ? <SchedulePage {...pageProps} /> : <Navigate to="/app" replace />}
               />
               <Route
                 path="/app/team-tasks"
-                element={<TeamTasksPage {...pageProps} />}
+                element={allowedPages.includes("Team & tasks") ? <TeamTasksPage {...pageProps} /> : <Navigate to="/app" replace />}
               />
               <Route
                 path="/app/conversations"
-                element={<ConversationsPage {...pageProps} />}
+                element={allowedPages.includes("Conversations") ? <ConversationsPage {...pageProps} /> : <Navigate to="/app" replace />}
               />
               <Route
                 path="/app/approvals"
-                element={<ApprovalsPage {...pageProps} />}
+                element={allowedPages.includes("Approvals") ? <ApprovalsPage {...pageProps} /> : <Navigate to="/app" replace />}
               />
               <Route
                 path="/app/agent-activity"
-                element={<AgentActivityPage {...pageProps} />}
+                element={allowedPages.includes("Agent activity") ? <AgentActivityPage {...pageProps} /> : <Navigate to="/app" replace />}
               />
               <Route
                 path="/app/profile"
-                element={<ProfilePage {...pageProps} />}
+                element={allowedPages.includes("Profile") ? <ProfilePage {...pageProps} /> : <Navigate to="/app" replace />}
               />
               <Route
                 path="/app/ai-setup"
-                element={<AISetupPage {...pageProps} />}
+                element={allowedPages.includes("Teach your AI") ? <AISetupPage {...pageProps} /> : <Navigate to="/app" replace />}
               />
+              <Route path="/app/access" element={allowedPages.includes("Team access") ? <AccessPage {...pageProps} /> : <Navigate to="/app" replace />} />
               <Route path="*" element={<Navigate to="/app" replace />} />
             </Routes>
           }
@@ -515,24 +579,29 @@ export default function App() {
             <p>
               Give your team a goal. Keep control of the important decisions.
             </p>
-            <div className="workflow-tabs flex gap-[7px] my-6 mx-0 [&_button]:[flex:1] [&_button]:py-[9px] [&_button]:px-[7px] [&_button]:bg-[#f6f8f1] [&_button]:border [&_button]:border-[#ebefdf] [&_button]:rounded-md [&_button]:text-[#8d9b7c] [&_button]:text-2xs [&_button.selected]:bg-[#eaf2df] [&_button.selected]:text-[#527638] [&_button.selected]:border-[#d5e4c4] phone:[&_button]:text-micro [&_button]:!text-[#73809a] [&_button]:!bg-[#f7f8fc] [&_button]:!border-[#e6eaf3] [&_button]:!rounded-[7px] [&_button.selected]:!bg-[#fff0e3] [&_button.selected]:!text-[#e6540a] [&_button.selected]:!border-[#ffd5bb]">
+            <div className="my-6 rounded-xl border border-[#e8ebf2] bg-[#f8f9fc] p-4">
+              <span className="mb-3 block text-[10px] font-bold uppercase tracking-[1.3px] text-[#8792a7]">Try an activity</span>
+              <div className="flex flex-wrap gap-2">
               {[
                 ["enquiry", "Customer enquiry"],
                 ["absence", "Staff disruption"],
                 ["complaint", "Service recovery"],
+                ["access", "Team onboarding"],
               ].map(([w, label]) => (
                 <button
                   key={w}
                   disabled={busy}
-                  className={workflow === w ? "selected" : ""}
+                  className="rounded-full border border-[#e1e6ef] bg-white px-3 py-2 text-[10px] font-semibold text-[#66748e] transition hover:border-[#ffc9a8] hover:text-orange"
                   onClick={() => {
-                    setWorkflow(w);
                     setGoal(prompts[w]);
+                    setSelectedWorkflow(w);
+                    setAskAnswer("");
                   }}
                 >
                   {label}
                 </button>
               ))}
+              </div>
             </div>
             <label
               className="input-label text-2xs text-[#82926f] font-600 !text-[#536582]"
@@ -544,9 +613,16 @@ export default function App() {
               id="goal"
               autoFocus
               value={goal}
-              onChange={(e) => setGoal(e.target.value)}
+              onChange={(e) => { setGoal(e.target.value); setAskAnswer(""); }}
+              placeholder="Describe what you want OperIQ to handle…"
               disabled={busy}
             />
+            {askAnswer && (
+              <div className="mb-4 rounded-xl border border-[#dce9e1] bg-[#f3faf6] p-4 text-sm leading-6 text-[#244936]">
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-[1.2px] text-[#478262]">OperIQ answer</span>
+                {askAnswer}
+              </div>
+            )}
             <div className="mode-note bg-[#f4f7ee] border border-[#e7eddc] p-3.5 flex items-start gap-2.5 rounded-[7px] text-2xs leading-loose text-[#94a082] [&_svg]:[flex-shrink:0] [&_svg]:mt-0.5 [&_svg]:text-[#89a16d] [&_strong]:block [&_strong]:text-tiny [&_strong]:text-[#687f50] [&_strong]:mb-1 !bg-[#fff8f1] !border-[#ffe5d0] !text-[#8d796d] [&_strong]:!text-[#a65429] [&_svg]:!text-orange">
               <ShieldCheck size={19} />
               <span>
@@ -587,7 +663,7 @@ export default function App() {
               ) : (
                 <>
                   <Sparkles size={17} />
-                  Run workflow
+                  {selectedWorkflow === "auto" ? "Ask OperIQ" : "Run workflow"}
                   <ArrowRight size={17} />
                 </>
               )}

@@ -23,6 +23,7 @@ export default function OverviewPage(props) {
     pending,
     action,
     start,
+    ask,
     navigate,
     agents,
     busy,
@@ -109,7 +110,7 @@ export default function OverviewPage(props) {
           <p>
             {pending.length
               ? `You have ${pending.length} compensation request to review. Your team has ${data.tasks.filter((t) => t.status !== "Done").length} open tasks.`
-              : "Your workspace is ready. Put OperIq to work on a customer enquiry, a schedule disruption, or a service issue."}
+              : "Your workspace is ready. Put OperIQ to work on a customer enquiry, a schedule disruption, or a service issue."}
           </p>
           <div className="briefing-bottom mt-6 pt-3.5 border-t border-[#dfe6d4] flex items-center justify-between gap-2.5 [&>span]:text-micro [&>span]:text-[#8d9b7c] [&>span]:flex [&>span]:items-center [&>span]:gap-[5px] [&_button]:bg-transparent [&_button]:text-[#5b7843] [&_button]:flex [&_button]:gap-[7px] [&_button]:items-center [&_button]:text-2xs [&_button]:font-600 [&_button]:p-0 [&_button]:whitespace-nowrap desktop:[align-items:start] desktop:flex-col desktop:gap-3 tablet:flex-row tablet:items-center phone:flex-col phone:[align-items:start] ![border:none] !p-0 !mt-3.5 ![align-items:start] !flex-col-reverse !gap-2.5 [&_button]:!bg-orange [&_button]:!text-white [&_button]:!text-xs [&_button]:!gap-[9px] [&_button]:!py-[13px] [&_button]:!px-[19px] [&_button]:!rounded-[9px] [&>span]:!text-micro [&>span]:!text-[#93715c] [&_.status-dot]:!bg-orange tablet:!flex-col-reverse tablet:![align-items:start]">
             <span>
@@ -118,9 +119,9 @@ export default function OverviewPage(props) {
                 ? "Live services configured"
                 : "Sandbox · no external messages or payments"}
             </span>
-            <button onClick={() => start("enquiry")}>
+            <button onClick={() => ask("")}>
               <Sparkles size={16} />
-              Ask OperIq
+              Ask OperIQ
             </button>
           </div>
           <BriefingActivity data={data} />

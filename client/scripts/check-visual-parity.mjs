@@ -24,7 +24,7 @@ if (mode === "before") {
   fixture = JSON.parse(await readFile(`${directory}/workspace.json`, "utf8"));
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const context = await browser.newContext({ reducedMotion: "reduce" });
-await context.addInitScript(() => localStorage.setItem("opsdesk-jwt", "visual-fixture-token"));
+await context.addInitScript(() => localStorage.setItem("operiq-jwt", "visual-fixture-token"));
 await context.route("**/api/workspace", (route) =>
   route.fulfill({ json: fixture }),
 );
@@ -174,7 +174,7 @@ try {
     }
     if (quick || (target && !target.endsWith("request-dialog"))) continue;
     await page
-      .getByRole("button", { name: "Ask OpsDesk", exact: false })
+      .getByRole("button", { name: "Ask OperIQ", exact: false })
       .first()
       .click();
     await capture(`${width}-request-dialog`);

@@ -12,7 +12,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-export function OverviewHero({ user, onRequest, onWorkflow }) {
+export function OverviewHero({ user, onRequest, onWorkflow, canUseAgents = true }) {
   const [request, setRequest] = useState("");
   return (
     <section className="overview-hero ![order:0] !grid ![grid-template-columns:1fr_1.35fr] !gap-[35px] !items-center !mt-0 !mx-0 !mb-[25px] wide:![grid-template-columns:.95fr_1.4fr] wide:!mb-[23px] laptop:![grid-template-columns:1fr_1.1fr] laptop:!gap-5 compact:![grid-template-columns:1fr] compact:!gap-5">
@@ -24,12 +24,12 @@ export function OverviewHero({ user, onRequest, onWorkflow }) {
           Your business, <span>in motion.</span>
         </h1>
         <p>
-          OperIq coordinates your people, customers and operations —
+          OperIQ coordinates your people, customers and operations —
           <br className="desktop-break mobile:!hidden" /> so you can focus
           on growth.
         </p>
       </div>
-      <div className="ask-panel !bg-white !border !border-border !rounded-[13px] !py-3 !px-3.5 [&_form]:!flex [&_form]:!items-center [&_form]:!gap-3.5 [&_form]:!p-[0_0_12px_6px] [&_form]:!border-b [&_form]:!border-[#f0f1f5] [&_form]:!text-orange [&_input]:![flex:1] [&_input]:!min-w-0 [&_input]:!py-2.5 [&_input]:!px-0 [&_input]:![border:none] [&_input]:!text-navy [&_input]:!text-13 [&_input]:!bg-transparent [&_input::placeholder]:!text-[#6c7897] [&_form_button]:!bg-orange [&_form_button]:!text-white [&_form_button]:!rounded-[10px] [&_form_button]:!w-[46px] [&_form_button]:!h-[46px] [&_form_button]:!grid [&_form_button]:!place-items-center mobile:!p-2.5 mobile:[&_form]:!gap-2 mobile:[&_form]:!pl-0 mobile:[&_input]:!text-tiny mobile:[&_form>svg]:!w-[19px] mobile:[&_form_button]:!h-[37px] mobile:[&_form_button]:!w-[37px] mobile:[&_form_button]:!rounded-lg mobile:[&_form_button]:![flex-shrink:0]">
+      {canUseAgents ? <div className="ask-panel !bg-white !border !border-border !rounded-[13px] !py-3 !px-3.5 [&_form]:!flex [&_form]:!items-center [&_form]:!gap-3.5 [&_form]:!p-[0_0_12px_6px] [&_form]:!border-b [&_form]:!border-[#f0f1f5] [&_form]:!text-orange [&_input]:![flex:1] [&_input]:!min-w-0 [&_input]:!py-2.5 [&_input]:!px-0 [&_input]:![border:none] [&_input]:!text-navy [&_input]:!text-13 [&_input]:!bg-transparent [&_input::placeholder]:!text-[#6c7897] [&_form_button]:!bg-orange [&_form_button]:!text-white [&_form_button]:!rounded-[10px] [&_form_button]:!w-[46px] [&_form_button]:!h-[46px] [&_form_button]:!grid [&_form_button]:!place-items-center mobile:!p-2.5 mobile:[&_form]:!gap-2 mobile:[&_form]:!pl-0 mobile:[&_input]:!text-tiny mobile:[&_form>svg]:!w-[19px] mobile:[&_form_button]:!h-[37px] mobile:[&_form_button]:!w-[37px] mobile:[&_form_button]:!rounded-lg mobile:[&_form_button]:![flex-shrink:0]">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -38,12 +38,12 @@ export function OverviewHero({ user, onRequest, onWorkflow }) {
         >
           <Sparkles size={23} />
           <input
-            aria-label="Ask OperIq anything"
-            placeholder="Ask OperIq anything…"
+            aria-label="Ask OperIQ anything"
+            placeholder="Ask OperIQ anything…"
             value={request}
             onChange={(event) => setRequest(event.target.value)}
           />
-          <button type="submit" aria-label="Prepare an OperIq request">
+          <button type="submit" aria-label="Prepare an OperIQ request">
             <Send size={20} />
           </button>
         </form>
@@ -58,7 +58,7 @@ export function OverviewHero({ user, onRequest, onWorkflow }) {
             Resolve a complaint
           </button>
         </div>
-      </div>
+      </div> : <div className="rounded-2xl border border-[#e3e8f0] bg-white p-5"><span className="text-[10px] font-bold uppercase tracking-widest text-orange">{user.role} access</span><h3 className="mt-2 text-base font-bold text-navy">Your workspace view is ready.</h3><p className="mt-2 text-xs leading-6 text-[#71809b]">You can access the schedules and operational work assigned to your role. Sensitive business controls remain with owners and managers.</p></div>}
     </section>
   );
 }

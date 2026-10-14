@@ -4,7 +4,7 @@ const workspaceSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "OpsDeskUser",
+      ref: "OperIQUser",
       required: true,
       unique: true,
       index: true,
@@ -14,4 +14,5 @@ const workspaceSchema = new mongoose.Schema(
   { versionKey: false },
 );
 
-export default mongoose.models.OpsDeskWorkspace || mongoose.model("OpsDeskWorkspace", workspaceSchema);
+export default mongoose.models.OperIQWorkspace ||
+  mongoose.model("OperIQWorkspace", workspaceSchema, "operiqworkspaces");

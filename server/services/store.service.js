@@ -71,6 +71,7 @@ export async function createUser({
     email: email.trim().toLowerCase(),
     passwordHash,
     businessName: businessName.trim(),
+    role: "owner",
     createdAt: new Date().toISOString(),
   };
 
@@ -101,6 +102,69 @@ export async function createUser({
   return user;
 }
 
+export async function createWorkspaceMember({ workspaceId, name, email, passwordHash, role, businessName }) {
+  const value = email.trim().toLowerCase();
+  if (await findUserByEmail(value))
+    throw Object.assign(Error("An account with this email already exists"), { status: 409 });
+  const userData = {
+    name: name.trim(),
+    email: value,
+    passwordHash,
+    businessName: businessName.trim(),
+    workspaceId,
+    role,
+    createdAt: new Date().toISOString(),
+  };
+  if (usesMongo()) return (await UserModel.create(userData)).toObject();
+  const user = { _id: randomUUID(), ...userData };
+  database.users.push(user);
+  await persistLocal();
+  return structuredClone(user);
+}
+
+export async function listWorkspaceMembers(workspaceId) {
+  if (usesMongo())
+    return UserModel.find({ $or: [{ _id: workspaceId }, { workspaceId }] })
+      .sort({ createdAt: 1 })
+      .lean();
+  return database.users
+    .filter((user) => user._id === workspaceId || user.workspaceId === workspaceId)
+    .map((user) => structuredClone(user));
+}
+
+export async function updateWorkspaceMember(workspaceId, memberId, changes) {
+  if (String(workspaceId) === String(memberId))
+    throw Object.assign(Error("The workspace owner role cannot be changed"), { status: 422 });
+  if (usesMongo()) {
+    const member = await UserModel.findOneAndUpdate(
+      { _id: memberId, workspaceId },
+      { $set: changes },
+      { new: true, runValidators: true },
+    ).lean();
+    if (!member) throw Object.assign(Error("Workspace member not found"), { status: 404 });
+    return member;
+  }
+  const member = database.users.find((user) => user._id === memberId && user.workspaceId === workspaceId);
+  if (!member) throw Object.assign(Error("Workspace member not found"), { status: 404 });
+  Object.assign(member, changes);
+  await persistLocal();
+  return structuredClone(member);
+}
+
+export async function removeWorkspaceMember(workspaceId, memberId) {
+  if (String(workspaceId) === String(memberId))
+    throw Object.assign(Error("The workspace owner cannot be removed"), { status: 422 });
+  if (usesMongo()) {
+    const result = await UserModel.deleteOne({ _id: memberId, workspaceId });
+    if (!result.deletedCount) throw Object.assign(Error("Workspace member not found"), { status: 404 });
+    return;
+  }
+  const index = database.users.findIndex((user) => user._id === memberId && user.workspaceId === workspaceId);
+  if (index < 0) throw Object.assign(Error("Workspace member not found"), { status: 404 });
+  database.users.splice(index, 1);
+  await persistLocal();
+}
+
 export async function snapshot(workspaceId) {
   if (!workspaceId) throw Error("Workspace identity is required");
   const data = usesMongo()
@@ -117,13 +181,30 @@ export async function findPublishedWorkspaceBySlug(slug) {
     const row = await WorkspaceModel.findOne({
       "data.aiProfile.slug": normalized,
       "data.aiProfile.status": "published",
+      "data.aiProfile.platformStatus": { $ne: "paused" },
     }).lean();
     return row?.data ? structuredClone(row.data) : null;
   }
   const value = Object.values(database.workspaces).find(
     (workspace) =>
       workspace.aiProfile?.slug === normalized &&
-      workspace.aiProfile?.status === "published",
+      workspace.aiProfile?.status === "published" &&
+      workspace.aiProfile?.platformStatus !== "paused",
+  );
+  return value ? structuredClone(value) : null;
+}
+
+export async function findWorkspaceBySlug(slug) {
+  const normalized = String(slug || "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (usesMongo()) {
+    const row = await WorkspaceModel.findOne({
+      "data.aiProfile.slug": normalized,
+    }).lean();
+    return row?.data ? structuredClone(row.data) : null;
+  }
+  const value = Object.values(database.workspaces).find(
+    (workspace) => workspace.aiProfile?.slug === normalized,
   );
   return value ? structuredClone(value) : null;
 }
@@ -131,11 +212,51 @@ export async function findPublishedWorkspaceBySlug(slug) {
 export async function findPublishedWorkspaceRecordBySlug(slug) {
   const normalized = String(slug || "").trim().toLowerCase();
   if (usesMongo()) {
-    const row = await WorkspaceModel.findOne({ "data.aiProfile.slug": normalized, "data.aiProfile.status": "published" }).lean();
+    const row = await WorkspaceModel.findOne({ "data.aiProfile.slug": normalized, "data.aiProfile.status": "published", "data.aiProfile.platformStatus": { $ne: "paused" } }).lean();
     return row ? { workspaceId: String(row.userId), data: structuredClone(row.data) } : null;
   }
-  const row = Object.entries(database.workspaces).find(([, value]) => value.aiProfile?.slug === normalized && value.aiProfile?.status === "published");
+  const row = Object.entries(database.workspaces).find(([, value]) => value.aiProfile?.slug === normalized && value.aiProfile?.status === "published" && value.aiProfile?.platformStatus !== "paused");
   return row ? { workspaceId: row[0], data: structuredClone(row[1]) } : null;
+}
+
+export async function listPlatformWorkspaces() {
+  if (usesMongo()) {
+    const rows = await WorkspaceModel.find({}).lean();
+    return rows.map((row) => ({
+      workspaceId: String(row.userId),
+      data: structuredClone(row.data),
+    }));
+  }
+  return Object.entries(database.workspaces).map(([workspaceId, data]) => ({
+    workspaceId,
+    data: structuredClone(data),
+  }));
+}
+
+export async function findInvitationByToken(token) {
+  if (usesMongo()) {
+    const row = await WorkspaceModel.findOne({ "data.invitations.token": token }).lean();
+    const invitation = row?.data?.invitations?.find((item) => item.token === token);
+    return invitation ? { workspaceId: String(row.userId), businessName: row.data.business.name, invitation: structuredClone(invitation) } : null;
+  }
+  for (const [workspaceId, data] of Object.entries(database.workspaces)) {
+    const invitation = data.invitations?.find((item) => item.token === token);
+    if (invitation) return { workspaceId, businessName: data.business.name, invitation: structuredClone(invitation) };
+  }
+  return null;
+}
+
+export async function acceptInvitationToken(workspaceId, token, accountId) {
+  return mutate(workspaceId, (state) => {
+    const invitation = state.invitations?.find((item) => item.token === token);
+    if (!invitation || invitation.status !== "Pending")
+      throw Object.assign(Error("This invitation is no longer available"), { status: 410 });
+    invitation.status = "Accepted";
+    invitation.accountId = accountId;
+    invitation.acceptedAt = new Date().toISOString();
+    delete invitation.token;
+    return invitation;
+  });
 }
 
 export async function slugBelongsToAnotherWorkspace(slug, workspaceId) {

@@ -5,6 +5,7 @@ import {
   Check,
   ExternalLink,
   Globe2,
+  ImagePlus,
   Plus,
   Send,
   Sparkles,
@@ -20,6 +21,8 @@ const defaultProfile = {
   email: "",
   address: "",
   openingHours: "",
+  heroImage: "",
+  accentColor: "#ff550b",
   tone: "friendly",
   languages: ["English"],
   greeting: "",
@@ -160,6 +163,28 @@ export default function AISetupPage({ data, api, setNotice }) {
       key,
       profile[key].filter((_, i) => i !== index),
     );
+  const uploadHeroImage = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("Choose a JPG, PNG, or WebP image");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 1600 / image.width, 900 / image.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        update("heroImage", canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.onerror = () => setNotice("That image could not be read");
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="pb-10">
@@ -260,6 +285,41 @@ export default function AISetupPage({ data, api, setNotice }) {
                   onChange={(e) => update("description", e.target.value)}
                   placeholder="Describe what you offer and who you serve."
                 />
+              </Field>
+              <Field label="Website accent color" optional>
+                <div className="mt-2 flex items-center gap-4 rounded-xl border border-[#dfe4ed] bg-[#fafbfc] p-3 mobile:flex-wrap">
+                  <label className="relative h-11 w-14 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-[#dfe4ed] bg-white p-1">
+                    <input
+                      type="color"
+                      value={profile.accentColor}
+                      onChange={(event) => update("accentColor", event.target.value)}
+                      className="h-full w-full cursor-pointer border-0 bg-transparent p-0"
+                      aria-label="Choose website accent color"
+                    />
+                  </label>
+                  <div className="min-w-0 flex-1">
+                    <strong className="block text-xs uppercase text-navy">{profile.accentColor}</strong>
+                    <span className="mt-1 block text-[10px] leading-4 text-[#7b8799]">Used for buttons, icons, highlights, and soft color accents on your customer website.</span>
+                  </div>
+                  <button type="button" onClick={() => update("accentColor", "#ff550b")} className="rounded-lg border border-[#dfe4ed] bg-white px-3 py-2 text-[10px] font-semibold text-[#5f6f89]">Reset</button>
+                </div>
+              </Field>
+              <Field label="Website banner image" optional>
+                <div className="mt-2 overflow-hidden rounded-2xl border border-dashed border-[#d9e0ea] bg-[#fafbfc]">
+                  {profile.heroImage ? (
+                    <div className="relative h-44">
+                      <img src={profile.heroImage} alt="Business banner preview" className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => update("heroImage", "")} className="absolute right-3 top-3 rounded-lg bg-white/95 px-3 py-2 text-[10px] font-semibold text-[#b54747] shadow-sm">Remove image</button>
+                    </div>
+                  ) : (
+                    <label className="flex cursor-pointer flex-col items-center justify-center px-5 py-8 text-center">
+                      <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#fff0e5] text-orange"><ImagePlus size={20} /></span>
+                      <strong className="mt-3 text-xs text-navy">Upload a banner image</strong>
+                      <span className="mt-1 text-[10px] text-[#7b8799]">Optional · JPG, PNG or WebP · landscape images work best</span>
+                      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => uploadHeroImage(event.target.files?.[0])} />
+                    </label>
+                  )}
+                </div>
               </Field>
               <div className="grid grid-cols-2 gap-5 mobile:grid-cols-1">
                 <Field label="Business email" requirement="Required">
@@ -457,12 +517,6 @@ export default function AISetupPage({ data, api, setNotice }) {
                 <h3 className="text-sm font-bold text-navy">
                   Frequently asked questions <span className="ml-2 rounded-full bg-[#f0f2f5] px-2 py-1 text-[9px] font-semibold text-[#7b8799]">Optional</span>
                 </h3>
-                <button
-                  onClick={() => addItem("faqs", { question: "", answer: "" })}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-orange"
-                >
-                  <Plus size={15} /> Add FAQ
-                </button>
               </div>
               <div className="mt-3 space-y-3">
                 {profile.faqs.length === 0 && (
@@ -498,6 +552,12 @@ export default function AISetupPage({ data, api, setNotice }) {
                   </div>
                 ))}
               </div>
+              <button
+                  onClick={() => addItem("faqs", { question: "", answer: "" })}
+                  className="ml-auto mt-4 flex items-center gap-1 text-xs font-semibold text-orange"
+              >
+                <Plus size={15} /> Add FAQ
+              </button>
             </div>
           )}
           {step === 3 && (
@@ -575,6 +635,15 @@ export default function AISetupPage({ data, api, setNotice }) {
                     <span className="mt-2 block text-[10px] font-semibold uppercase tracking-wide text-[#98a2b3]">
                       Source: {answer.source}
                     </span>
+                    {answer.governance?.status &&
+                      answer.governance.status !== "Not required" && (
+                        <span className="mt-1 block text-[10px] font-semibold text-[#64748b]">
+                          Governance: {answer.governance.status}
+                          {answer.governance.reason
+                            ? ` — ${answer.governance.reason}`
+                            : ""}
+                        </span>
+                      )}
                   </div>
                 )}
                 <div className="flex gap-2">
@@ -704,6 +773,7 @@ function Field({ label, children, optional = false, requirement = "" }) {
     </label>
   );
 }
+
 function Empty({ text }) {
   return (
     <div className="rounded-2xl border border-dashed border-[#dfe4ed] bg-[#fafbfc] px-5 py-8 text-center text-xs text-[#7c889c]">

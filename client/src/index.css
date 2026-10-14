@@ -3,6 +3,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Rebuild Tailwind when page components add new utility classes. */
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

@@ -155,13 +155,13 @@ export default function AuthPage({ mode, onAuthenticated, navigate }) {
                         <p className="mt-1.5 text-base leading-6 text-[#62718b]">
                             {signup ? (
                                 <>
-                                    Get started with operiq in minutes.
+                                    Get started with OperIQ in minutes.
                                     <br />
                                     No credit card required.
                                 </>
                             ) : (
                                 <>
-                                    Log in to your operiq account and
+                                    Log in to your OperIQ account and
                                     <br className="mobile:hidden" /> keep your business running
                                     smoothly.
                                 </>
@@ -376,7 +376,7 @@ function VisualPanel({ signup, navigate }) {
                     className={`${signup ? "max-w-[380px]" : "max-w-[470px]"} mt-2.5 text-base leading-6 text-[#566783]`}
                 >
                     From customer enquiries to staff scheduling and service recovery,
-                    OperIq coordinates the work so you can focus on growing your
+                    OperIQ coordinates the work so you can focus on growing your
                     business.
                 </p>
 

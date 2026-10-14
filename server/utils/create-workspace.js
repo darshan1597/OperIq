@@ -13,6 +13,8 @@ export function createWorkspace({ businessName, ownerName }) {
       email: "",
       address: "",
       openingHours: "",
+      heroImage: "",
+      accentColor: "#ff550b",
       tone: "friendly",
       languages: ["English"],
       greeting: "",
@@ -43,5 +45,7 @@ export function createWorkspace({ businessName, ownerName }) {
     runs: [],
     events: [],
     messages: [],
+    customerRequests: [],
+    invitations: [],
   };
 }

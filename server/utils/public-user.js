@@ -3,5 +3,7 @@ export const publicUser = (user) => ({
     name: user.name,
     email: user.email,
     businessName: user.businessName,
+    role: user.role || "owner",
+    workspaceId: String(user.workspaceId || user._id),
     createdAt: user.createdAt,
 });

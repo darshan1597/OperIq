@@ -62,7 +62,7 @@ const pageShell =
     "min-h-screen overflow-hidden bg-[#fffdfb] font-ui text-navy [&_*]:box-border [&_button]:cursor-pointer [&_button]:font-ui [&_button]:transition-all [&_button]:duration-200 [&_button:hover]:brightness-[.97] [&_button:focus-visible]:outline [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-offset-2 [&_button:focus-visible]:outline-orange [&_a]:text-inherit [&_a]:no-underline"
 ;
 
-export default function LandingPage({ navigate }) {
+export default function LandingPage({ navigate, authenticated = false }) {
     return (
         <div className={pageShell}>
             <header className="mx-auto flex h-20 max-w-[1440px] items-center px-8 mobile:px-5">
@@ -81,18 +81,29 @@ export default function LandingPage({ navigate }) {
                     <a href="#pricing">Pricing</a>
                 </nav>
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate("/login")}
-                        className="border-0 bg-transparent px-3 py-2 text-xs font-semibold"
-                    >
-                        Sign in
-                    </button>
-                    <button
-                        onClick={() => navigate("/signup")}
-                        className="rounded-xl border-0 bg-orange px-5 py-3 text-xs font-bold text-white shadow-[0_8px_22px_#ff550b2a] mobile:hidden"
-                    >
-                        Get started free
-                    </button>
+                    {authenticated ? (
+                        <button
+                            onClick={() => navigate("/app")}
+                            className="flex items-center gap-2 rounded-xl border-0 bg-orange px-5 py-3 text-xs font-bold text-white shadow-[0_8px_22px_#ff550b2a]"
+                        >
+                            App <ArrowRight size={15} />
+                        </button>
+                    ) : (
+                        <>
+                            <button
+                                onClick={() => navigate("/login")}
+                                className="border-0 bg-transparent px-3 py-2 text-xs font-semibold"
+                            >
+                                Sign in
+                            </button>
+                            <button
+                                onClick={() => navigate("/signup")}
+                                className="rounded-xl border-0 bg-orange px-5 py-3 text-xs font-bold text-white shadow-[0_8px_22px_#ff550b2a] mobile:hidden"
+                            >
+                                Get started free
+                            </button>
+                        </>
+                    )}
                 </div>
             </header>
             <main>
@@ -110,16 +121,16 @@ export default function LandingPage({ navigate }) {
 
                         <p className="mt-6 max-w-xl text-lg leading-8 text-[#536482] mobile:text-base mobile:leading-7">
                             From customer enquiries to staff scheduling and service recovery,
-                            OperIq coordinates the work so you can focus on growing your
+                            OperIQ coordinates the work so you can focus on growing your
                             business.
                         </p>
 
                         <div className="mt-8 flex flex-wrap gap-4">
                             <button
-                                onClick={() => navigate("/signup")}
+                                onClick={() => navigate(authenticated ? "/app" : "/signup")}
                                 className="flex items-center gap-3 rounded-xl border-0 bg-orange px-7 py-4 text-sm font-bold text-white shadow-[0_12px_30px_#ff550b30]"
                             >
-                                Get started free <ArrowRight size={18} />
+                                {authenticated ? "Open App" : "Get started free"} <ArrowRight size={18} />
                             </button>
                             <a
                                 href="#how"
@@ -191,7 +202,7 @@ export default function LandingPage({ navigate }) {
                             Built for service businesses
                         </h2>
                         <p className="mt-1 text-sm text-[#687895]">
-                            OperIq adapts to your workflow, whether you run a salon, repair
+                            OperIQ adapts to your workflow, whether you run a salon, repair
                             shop, gym or tutoring center.
                         </p>
                     </div>
@@ -211,7 +222,7 @@ export default function LandingPage({ navigate }) {
                     className="mx-auto grid max-w-[1440px] grid-cols-[300px_repeat(3,1fr)] gap-7 px-8 py-9 desktop:grid-cols-1 mobile:px-5"
                 >
                     <div>
-                        <h2 className="text-xl font-extrabold">How OperIq works</h2>
+                        <h2 className="text-xl font-extrabold">How OperIQ works</h2>
                         <p className="mt-2 text-xs text-[#687895]">
                             Get started in minutes and let AI handle the busy work.
                         </p>
@@ -220,7 +231,7 @@ export default function LandingPage({ navigate }) {
                     {[
                         [
                             "1",
-                            "Tell OperIq your goal",
+                            "Tell OperIQ your goal",
                             "“Schedule tomorrow's appointments” or “Handle this customer complaint.”",
                         ],
                         [
@@ -291,10 +302,10 @@ export default function LandingPage({ navigate }) {
                     </h2>
                     <div className="text-center">
                         <button
-                            onClick={() => navigate("/signup")}
+                            onClick={() => navigate(authenticated ? "/app" : "/signup")}
                             className="flex items-center gap-3 rounded-xl border-0 bg-orange px-8 py-4 text-sm font-bold text-white shadow-[0_10px_28px_#ff550b28]"
                         >
-                            Get started free <ArrowRight size={18} />
+                            {authenticated ? "Open App" : "Get started free"} <ArrowRight size={18} />
                         </button>
                         <small className="mt-2 block text-[10px] text-[#7c879b]">
                             No credit card required
@@ -330,7 +341,7 @@ function DashboardPreview() {
 
                 <div className="grid grid-cols-[120px_1fr] mobile:grid-cols-1">
                     <aside className="border-r border-border bg-[#fffaf6] p-4 mobile:hidden">
-                        <strong className="text-xs">OperIq</strong>
+                        <strong className="text-xs">OperIQ</strong>
                         {[
                             [LayoutDashboard, "Dashboard"],
                             [Users, "Customers"],
@@ -470,7 +481,7 @@ function Footer() {
                 ))}
             </div>
             <div className="mx-auto flex max-w-[1376px] items-center justify-between border-t border-[#eceff4] px-8 py-5 text-[10px] text-[#8792a5] mobile:flex-col mobile:gap-2 mobile:px-5">
-                <span>&copy; {new Date().getFullYear()} OperIq. All rights reserved.</span>
+                <span>&copy; {new Date().getFullYear()} OperIQ. All rights reserved.</span>
                 <span>Built with intention. Governed with ArmorIQ.</span>
             </div>
         </footer>

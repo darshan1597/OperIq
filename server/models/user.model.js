@@ -20,6 +20,17 @@ const userSchema = new mongoose.Schema(
       type: String, 
       required: true 
     },
+    workspaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "OperIQUser",
+      default: null,
+      index: true,
+    },
+    role: {
+      type: String,
+      enum: ["owner", "manager", "receptionist", "staff"],
+      default: "owner",
+    },
     createdAt: { 
       type: String, 
       required: true 
@@ -28,4 +39,5 @@ const userSchema = new mongoose.Schema(
   { versionKey: false },
 );
 
-export default mongoose.models.OpsDeskUser || mongoose.model("OpsDeskUser", userSchema);
+export default mongoose.models.OperIQUser ||
+  mongoose.model("OperIQUser", userSchema, "operiqusers");

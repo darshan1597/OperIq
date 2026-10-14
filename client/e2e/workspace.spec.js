@@ -4,7 +4,7 @@ test("public landing page leads to dedicated login and signup screens", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Your business runs smoother/ })).toBeVisible();
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Sign in to OpsDesk" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to OperIQ" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   await page.getByRole("button", { name: "Create an account" }).click();
   await expect(page.getByRole("heading", { name: "Create your workspace" })).toBeVisible();
@@ -30,11 +30,11 @@ test("redesigned workspace preserves every page and workflow entry point", async
   await expect(
     page.getByRole("heading", { name: "Your business, in motion." }),
   ).toBeVisible();
-  const brand = page.getByRole("link", { name: "opsdesk", exact: true });
-  await expect(brand).toHaveText("opsdesk");
+  const brand = page.getByRole("link", { name: "operiq", exact: true });
+  await expect(brand).toHaveText("operiq");
   await expect(brand.locator("img")).toHaveAttribute(
     "src",
-    "/brand/opsdesk-symbol.png",
+    "/brand/operiq-symbol.png",
   );
   await expect
     .poll(() =>
@@ -49,10 +49,10 @@ test("redesigned workspace preserves every page and workflow entry point", async
   await expect(page.getByText("Your AI team", { exact: true })).toBeVisible();
   await expect(page.getByText("Workspace owner", { exact: true })).toBeInViewport();
   await page
-    .getByRole("textbox", { name: "Ask OpsDesk anything" })
+    .getByRole("textbox", { name: "Ask OperIQ anything" })
     .fill("Review tomorrow’s staff coverage");
   await page
-    .getByRole("button", { name: "Prepare an OpsDesk request" })
+    .getByRole("button", { name: "Prepare an OperIQ request" })
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByLabel("Your request")).toHaveValue(

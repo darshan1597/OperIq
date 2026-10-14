@@ -13,11 +13,11 @@ export default function TeamTasksPage(props) {
     setNotice,
     load,
   } = props;
-  const [member,setMember]=useState({name:"",email:"",skills:""});
-  const addStaff=async(e)=>{e.preventDefault();try{await api("/staff",{name:member.name,email:member.email,skills:member.skills.split(",").map(x=>x.trim()).filter(Boolean)});setMember({name:"",email:"",skills:""});await load();setNotice("Team member added");}catch(error){setNotice(apiError(error));}};
+  const [member,setMember]=useState({name:"",email:""});
+  const addStaff=async(e)=>{e.preventDefault();try{await api("/staff",member);setMember({name:"",email:""});await load();setNotice("Team member added");}catch(error){setNotice(apiError(error));}};
   return (
     <>
-      <form onSubmit={addStaff} className="mb-5 grid grid-cols-[1fr_1fr_2fr_auto] gap-3 rounded-xl border border-border bg-white p-4 compact:grid-cols-1"><input className="rounded-lg border border-border px-3 py-2.5 text-xs" placeholder="Staff name" value={member.name} onChange={e=>setMember({...member,name:e.target.value})}/><input className="rounded-lg border border-border px-3 py-2.5 text-xs" type="email" placeholder="Email" value={member.email} onChange={e=>setMember({...member,email:e.target.value})}/><input className="rounded-lg border border-border px-3 py-2.5 text-xs" placeholder="Skills matching services, comma separated" value={member.skills} onChange={e=>setMember({...member,skills:e.target.value})}/><button className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange px-4 py-2.5 text-xs font-semibold text-white"><Plus size={15}/>Add staff</button></form>
+      {["owner", "manager"].includes(data.user.role) && <form onSubmit={addStaff} className="mb-5 grid grid-cols-[1fr_1fr_auto] gap-3 rounded-xl border border-border bg-white p-4 compact:grid-cols-1"><input className="rounded-lg border border-border px-3 py-2.5 text-xs" placeholder="Staff name" value={member.name} onChange={e=>setMember({...member,name:e.target.value})}/><input className="rounded-lg border border-border px-3 py-2.5 text-xs" type="email" placeholder="Email" value={member.email} onChange={e=>setMember({...member,email:e.target.value})}/><button className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange px-4 py-2.5 text-xs font-semibold text-white"><Plus size={15}/>Add staff</button></form>}
       <div className="staff-grid grid grid-cols-3 gap-5 mb-[25px] tablet:gap-2.5 phone:[grid-template-columns:1fr]">
         {!data.staff.length && <section className="col-span-full card bg-white border border-border rounded-xl"><Empty icon={Users} title="No team members yet" text="Your staff directory will appear here after team members are added." /></section>}
         {data.staff.map((s) => (
@@ -27,7 +27,8 @@ export default function TeamTasksPage(props) {
           >
             {avatar(s)}
             <h3>{s.name}</h3>
-            <p>{s.role}</p>
+            <span className="my-3 inline-flex rounded-md bg-[#eef2f8] px-2.5 py-1.5 text-[10px] font-semibold capitalize text-[#51627f]">{s.role || "staff"}</span>
+            <p className="mb-4 text-[11px] text-[#71809b]">Can perform all owner-listed services</p>
             <select
               aria-label={`${s.name} availability`}
               value={s.status}

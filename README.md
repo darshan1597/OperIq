@@ -1,4 +1,4 @@
-# OpsDesk
+# OperIQ
 
 A MERN operations workspace for service businesses. Coordinate customer enquiries, appointment proposals, staff tasks, and complaint resolution from one dashboard.
 
@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Copy `client/.env.example` to `client/.env` for Firebase's public web configuration. Add the Firebase Admin service-account values from `server/.env.example` to `server/.env`. In Firebase Authentication, enable the Google provider and add your local and deployed domains to Authorized domains. Firebase verifies Google identity; OpsDesk then issues its own JWT and keeps workspace data in the OpsDesk database.
+Copy `client/.env.example` to `client/.env` for Firebase's public web configuration. Add the Firebase Admin service-account values from `server/.env.example` to `server/.env`. In Firebase Authentication, enable the Google provider and add your local and deployed domains to Authorized domains. Firebase verifies Google identity; OperIQ then issues its own JWT and keeps workspace data in the OperIQ database.
 
 Open http://127.0.0.1:5173. API: http://127.0.0.1:4000.
 
@@ -35,7 +35,7 @@ UI regression checks require Google Chrome. They check all existing pages, globa
 
 Application components use Tailwind utility classes directly in their React `className` values. Dynamic status classes are written as complete Tailwind class strings so the build can discover them without a generated style file. `client/src/index.css` contains only the Tailwind entry directives, fonts, shared design variables, browser defaults, and the spinner keyframe. Preflight remains disabled to preserve the existing native control geometry.
 
-`client/src/pages/components/Brand.jsx` renders the generated transparent symbol from `client/public/brand/opsdesk-symbol.png`; the navy/orange `opsdesk` wordmark is separate, selectable React text. No product name is embedded in the image.
+`client/src/pages/components/Brand.jsx` renders the generated transparent symbol from `client/public/brand/operiq-symbol.png`; the navy/orange `operiq` wordmark is separate, selectable React text. No product name is embedded in the image.
 
 For a future styling migration, run `npm run visual:before` from `client/`, then compare with `npm run visual:after`. The script freezes workspace data and compares computed styles, element bounds, and screenshots across all pages, dialogs, and responsive widths. It excludes the intentional brand replacement and allows at most two RGB levels of Chromium compositing noise in screenshots; computed styles and bounds must match exactly. Local captures and reports live in ignored `client/.local/tailwind-parity/`.
 
@@ -44,41 +44,40 @@ After building the client, `npm start` from `server/` serves the UI and API at p
 ## What works
 
 - Responsive owner dashboard, searchable customer directory, calendar list, staff availability, task board, message drafts, compensation decisions, and exportable execution records.
+- Shared-workspace human access with Owner, Manager, Receptionist, and Staff roles. Owners can ask the Access agent to assign explicit roles or balance unspecified invitations by current role counts. The resulting `create_and_send_member_invites` call is sent through ArmorIQ; after authorization, it creates pending records and emails secure links through Nodemailer and Gmail. Accepted links create the actual member account. Server middleware enforces each role; non-owners cannot read invitation tokens, and staff responses contain only their own schedule, customers, tasks, and availability record.
 - Three sandbox workflow rehearsals: enquiry to appointment proposal, staff coverage coordination, and complaint follow-up with compensation request.
 - Booking constraints: qualified available staff, business hours, staff/customer conflicts, and explicit customer acceptance. Pending proposals reserve availability. Acceptance rechecks all constraints.
 - Customer messages remain drafts. Financial approvals record sandbox decisions; they do not execute payments.
-- Live model planning with role-specific tool boundaries and ArmorIQ capture-plan / intent-token / proxy-invoke integration.
+- Customer chat separates information from actions. Information-only questions use published business knowledge. Refund and booking requests invoke `submit_customer_request` through ArmorIQ, while private database requests invoke `export_customers` so an actual ArmorIQ BLOCK is recorded. Private export results are never returned to the public chat even if policy is misconfigured.
+- Live model planning with role-specific application tool boundaries, ArmorIQ capture-plan, short-lived intent tokens, policy-aware proxy invocation, and automatic continuation after an ArmorIQ approval.
 - Real MCP tools available via authenticated Streamable HTTP (`POST /mcp`) or stdio (`npm run mcp` from `server/`).
 
-## Honest integration status
+## Live ArmorIQ integration
 
-**Default sandbox mode is not an AI execution demo or proof of ArmorIQ enforcement.** It runs predefined rehearsal plans so the workspace can be explored without credentials. Custom prompt interpretation requires live mode. No fake ArmorIQ trace is generated.
+OperIQ is configured for live ArmorIQ enforcement through the registered `operiq-mcp-v4` server. The current server advertises 24 tools. The live diagnostic verifies plan capture, short-lived intent-token issuance, Merkle proof use, proxy invocation, and a verified MCP result. No credentials are included in this repository.
 
-Live integration has not been verified against an ArmorIQ account. No credentials are included. To complete the hackathon proof:
+To reproduce the integration:
 
 1. Configure `JWT_SECRET`, `MONGODB_URI`, `OPENAI_API_KEY`, `ARMORIQ_API_KEY`, and `MCP_SHARED_SECRET` in `server/.env`. An OpenAI-compatible endpoint can be set with `OPENAI_BASE_URL` and `OPENAI_MODEL`. The signed-in account email is passed to ArmorIQ for each invocation.
-2. Register `opsdesk-mcp` in ArmorIQ using a reachable HTTPS `/mcp` endpoint and the header `Authorization: Bearer <MCP_SHARED_SECRET>`. The development server binds to loopback; use a suitable development tunnel/reverse proxy. Set a strong `JWT_SECRET`; users register and sign in to access their isolated workspace.
-3. Configure ArmorIQ policy to permit intended operations and deny customer exports/cancellations. The code captures only permitted plan steps, mints a short-lived intent token, then invokes through the ArmorIQ proxy. Remote MCP execution occurs exactly once; the application does not repeat it locally.
+2. Register the MCP server in ArmorIQ using a reachable HTTPS `/mcp` endpoint and the header `Authorization: Bearer <MCP_SHARED_SECRET>`. The development server binds to loopback; use a suitable development tunnel/reverse proxy. Set `ARMORIQ_MCP_NAME` to the registered server name.
+3. Configure ArmorIQ policies for the intended tools. Allow read and preparation tools, hold consequential execution tools such as `admin_pause_business_ai`, and block private exports such as `export_customers` and `admin_export_platform_registry`. The coordinator captures the complete plan and mints a short-lived intent token before invoking through the ArmorIQ proxy. Agent-specific tool boundaries are validated by OperIQ before that invocation.
 4. Set `EXECUTION_MODE=live` and restart. Run a workflow, optionally enabling the unplanned export probe. Record an actual successful allowed call and an actual ArmorIQ denial, including the dashboard trace. Unexpected export permission is reported as **Unexpectedly allowed**, not relabeled a block.
-5. A policy hold is recorded with its ArmorIQ delegation ID. Resolve it in ArmorIQ. Automatic hold continuation and an in-app ArmorIQ approval interface are not implemented; do not confuse the separate sandbox compensation inbox with ArmorIQ approval.
+5. A policy hold is recorded with its ArmorIQ delegation ID. Resolve it in ArmorIQ. The pending invocation remains fail-closed and the workflow automatically continues from that exact step after approval. The separate compensation inbox represents business approval records and must not be presented as the ArmorIQ approval interface.
 
 Application role denials are labeled **Application role boundary**. ArmorIQ proxy errors are failures, not fabricated security blocks. Missing credentials in live mode fail closed without sandbox fallback.
 
 ## Architecture and current limits
 
-`client/`: React, React Router, Vite, Tailwind, and Lucide. `client/src/main.jsx` only mounts the router and application; `App.jsx` contains the shared workspace shell and route table; every workspace view has its own module under `client/src/pages/`; reusable UI lives under `client/src/pages/components/`. `server/`: Express, Mongoose, MCP SDK, ArmorIQ SDK, and an OpenAI-compatible planner.
+`client/`: React, React Router, Vite, Tailwind, and Lucide for the business dashboard and public customer portal. `admin/`: a separate React, Router, Vite, and Tailwind application for platform monitoring. `server/`: Express, Mongoose, MCP SDK, ArmorIQ SDK, and an OpenAI-compatible planner.
 
-The coordinator produces a structured plan; customer, operations, and resolution executors have different application tool permissions. They share one model. Native cryptographic sub-agent delegation is **not implemented**. This is an initial functional foundation, not a finished autonomous business platform.
+The coordinator produces a structured plan; customer, operations, resolution, and access executors have different application tool permissions. They share one model. In live mode, the installed ArmorIQ SDK captures the plan, issues a short-lived intent token, and routes MCP calls through policy enforcement.
 
-OpsDesk uses email/password authentication with expiring JWT sessions. Each account receives an isolated workspace in MongoDB or the local development store. Customer acceptance buttons remain sandbox controls in the owner UI rather than authenticated customer links. External messaging, payment processing, automatic rescheduling, realtime customer negotiation, and production deployment are not included.
+OperIQ uses email/password authentication with expiring JWT sessions. Each account receives an isolated workspace in MongoDB or the local development store. Customer acceptance buttons remain sandbox controls in the owner UI rather than authenticated customer links. External messaging, payment processing, automatic rescheduling, realtime customer negotiation, and production deployment are not included.
 
 The MCP shared secret trusts its holder to call tools; give it only to the configured ArmorIQ proxy. Do not share it with customers or the model. All sample records use synthetic customer data. Run only sandbox financial workflows. The in-process serial mutation queue prevents local races; multiple API processes against the same workspace require database transactions/optimistic concurrency before deployment. Do not run stdio and HTTP MCP writers simultaneously against the same local file.
 
 SDK references: https://docs.armoriq.ai/sdk and https://docs.armoriq.ai/platform/sdk-cli/typescript-sdk. These currently differ in some API details; this project's installed package is the implementation reference.
 
-## Hackathon checklist still to complete
+## Demo preparation
 
-- Verify live ArmorIQ integration with a registered MCP server and real allow/block evidence.
-- Implement native scoped delegation and approval continuation if included in the pitch.
-- Record a 90-second demo and publish your repository with setup instructions.
-- Disclose pre-existing dependencies and confirm development falls within your official hackathon window.
+See [DEMO.md](./DEMO.md) for the final allow, hold, block, audit, and backup-recording checklist.

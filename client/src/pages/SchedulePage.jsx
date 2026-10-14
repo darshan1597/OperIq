@@ -1,5 +1,5 @@
 import React from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ShieldCheck } from "lucide-react";
 import { Empty, SearchBox } from "./components/Common.jsx";
 
 export default function SchedulePage(props) {
@@ -11,6 +11,7 @@ export default function SchedulePage(props) {
     action,
     query,
     setQuery,
+    start,
   } = props;
   return (
     <section className="card bg-white border border-border rounded-lg p-5 min-w-0 phone:p-4 !rounded-xl !p-5 !border-[#e9ebf0] !shadow-[0_2px_6px_#14213a02] mobile:!p-4">
@@ -18,7 +19,12 @@ export default function SchedulePage(props) {
         <span className="section-title flex items-center gap-2 text-xs font-600 phone:text-tiny !text-[#0d1a3c] !text-sm !font-700 wide:!text-[15px]">
           Appointments
         </span>
-        <SearchBox query={query} setQuery={setQuery} />
+        <div className="flex items-center gap-2">
+          <button className="inline-flex items-center gap-2 rounded-lg border border-[#ffd9c3] bg-[#fffaf6] px-3 py-2.5 text-xs font-semibold text-[#cf440a]" onClick={() => start("conflict")}>
+            <ShieldCheck size={15} /> Scan conflicts
+          </button>
+          <SearchBox query={query} setQuery={setQuery} />
+        </div>
       </div>
       {!appointments.length ? <Empty icon={CalendarDays} title={query ? "No appointments match your search" : "No appointments scheduled"} text={query ? "Try searching with a different customer, service, or date." : "Appointments will appear here after they are added or proposed."} /> : <div className="table-scroll overflow-x-auto">
         <table>

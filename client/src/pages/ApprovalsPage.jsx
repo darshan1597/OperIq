@@ -1,83 +1,104 @@
-import React from "react";
-import {
-  ShieldCheck,
-} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import { Empty } from "./components/Common.jsx";
 
-export default function ApprovalsPage(props) {
-  const {
-    data,
-    customer,
-    badge,
-    action,
-    start,
-  } = props;
+export default function ApprovalsPage({ data, customer, staff, badge, action, start }) {
+  const [processingId, setProcessingId] = useState(null);
+  useEffect(() => {
+    if (!processingId) return undefined;
+    const current = data.approvals.find((item) => item.id === processingId);
+    if (current?.executionStatus === "Completed") setProcessingId(null);
+    const timer = setTimeout(() => setProcessingId(null), 12000);
+    return () => clearTimeout(timer);
+  }, [data.approvals, processingId]);
+  const decide = async (approval, decision) => {
+    if (decision === "Approved") setProcessingId(approval.id);
+    await action(`/approvals/${approval.id}/decision`, { decision });
+    if (decision === "Rejected") setProcessingId(null);
+  };
+  const executionTypes = new Set(["Team invitation", "Booking cancellation", "Booking reschedule", "Schedule conflict resolution"]);
+  const actionLabel = (approval) => {
+    if (approval.status === "Approved") return "Retry execution";
+    if (approval.type === "Team invitation") return "Approve and send";
+    if (approval.type === "Booking cancellation") return "Approve cancellation";
+    if (approval.type === "Booking reschedule") return "Approve reschedule";
+    if (approval.type === "Schedule conflict resolution") return "Approve resolution";
+    return "Approve";
+  };
   return (
-    <section className="card bg-white border border-border rounded-lg p-5 min-w-0 phone:p-4 !rounded-xl !p-5 !border-[#e9ebf0] !shadow-[0_2px_6px_#14213a02] mobile:!p-4">
-      <div className="section-heading flex justify-between items-center gap-[15px] mb-5 [&_h3]:text-sm [&_h3]:font-650 [&_h3]:tracking-[-.2px] [&_p]:text-tiny [&_p]:text-[#969d93] [&_p]:mt-[7px] phone:[&_.muted]:hidden phone:[&_h3]:text-13 phone:gap-2 !mb-4 [&_h3]:!text-base [&_h3]:!text-navy [&_p]:!text-xs [&_p]:!text-[#71809b]">
-        <span className="section-title flex items-center gap-2 text-xs font-600 phone:text-tiny !text-[#0d1a3c] !text-sm !font-700 wide:!text-[15px]">
-          Owner decisions
-        </span>
-        <span className="pill text-micro tracking-[.7px] font-600 text-[#9ba393] border border-[#e7ebdf] rounded-sm py-[5px] px-1.5 whitespace-nowrap phone:text-[6px] phone:whitespace-normal phone:text-right phone:max-w-[145px] !bg-[#fff2e7] !text-[#6c6470] ![border:none] !rounded-md !text-micro">
-          SANDBOX COMPENSATION · NO PAYMENTS
-        </span>
+    <section className="card min-w-0 rounded-xl border border-[#e9ebf0] bg-white p-5 shadow-[0_2px_6px_#14213a02] mobile:p-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <span className="text-sm font-bold text-navy wide:text-[15px]">Owner decisions</span>
+        <span className="rounded-md bg-[#fff2e7] px-2 py-1.5 text-[9px] font-semibold uppercase tracking-[.7px] text-[#6c6470]">Workspace approvals</span>
       </div>
-      <p className="section-description text-[#96a288] text-tiny leading-loose my-[15px] mx-0 !text-[#74829c]">
-        These are application approval requests. ArmorIQ holds appear separately
-        in Agent activity and must be resolved in ArmorIQ.
+      <p className="my-4 text-xs leading-6 text-[#74829c]">
+        Review decisions for your workspace. Approved AI proposals execute only after ArmorIQ authorizes the matching MCP action.
       </p>
       {!data.approvals.length ? (
-        <Empty
-          icon={ShieldCheck}
-          title="You’re all caught up"
-          text="Compensation requests will appear here when a resolution workflow needs your decision."
-          button={() => start("complaint")}
-        />
+        <Empty icon={ShieldCheck} title="You're all caught up" text="AI proposals will appear here when an action needs a workspace decision." button={() => start("complaint")} />
       ) : (
-        data.approvals.map((a) => (
-          <article
-            className="approval-card border-t border-[#e9eee1] py-[23px] px-0 flex gap-5 justify-between [align-items:start] [&_h3]:text-lg [&_p]:text-[#8a987c] [&_p]:text-xs [&_p]:leading-loose [&_p]:mt-2.5 [&_p]:max-w-[650px] [&_.button-row]:mt-[15px] phone:flex-col !border-[#edf0f5] [&_p]:!text-[#667794] [&_h3]:!text-navy"
-            key={a.id}
-          >
-            <div>
-              <span className="eyebrow text-caption tracking-[1.8px] font-650 text-[#929b8b] mb-[11px] !text-[#8892a5]">
-                {a.type}
-              </span>
-              <h3>
-                ₹{a.amount} · {customer(a.customerId)?.name}
-              </h3>
-              <p>{a.reason}</p>
-              {a.result && <small>{a.result}</small>}
+        data.approvals.map((approval) => {
+          const expired = approval.expiresAt && Date.parse(approval.expiresAt) <= Date.now();
+          const processing = processingId === approval.id || approval.executionStatus === "Executing";
+          return (
+          <article className="flex items-start justify-between gap-5 border-t border-[#edf0f5] py-6 phone:flex-col" key={approval.id}>
+            <div className="min-w-0 flex-1">
+              <span className="mb-3 block text-[10px] font-semibold uppercase tracking-[1.5px] text-[#8892a5]">{approval.type}</span>
+              {approval.type === "Team invitation" ? (
+                <>
+                  <h3 className="text-lg font-bold text-navy">{approval.members.length} proposed team invitation{approval.members.length === 1 ? "" : "s"}</h3>
+                  <div className="mt-3 space-y-2">
+                    {approval.members.map((member) => (
+                      <div key={member.email} className="flex items-center justify-between gap-4 rounded-lg border border-[#edf0f5] bg-[#fbfcfe] px-3 py-2.5">
+                        <span className="truncate text-xs font-semibold text-navy">{member.email}</span>
+                        <span className="shrink-0 rounded-md bg-[#fff1e7] px-2 py-1 text-[10px] font-semibold capitalize text-orange">{member.role}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-3 max-w-2xl text-xs leading-6 text-[#667794]">Prepared by OperIQ AI. No account or email is created until the owner approves and ArmorIQ authorizes execution.</p>
+                </>
+              ) : ["Booking cancellation", "Booking reschedule", "Schedule conflict resolution"].includes(approval.type) ? (() => {
+                const booking = data.appointments.find((item) => item.id === approval.bookingId);
+                return (
+                  <>
+                    <h3 className="text-lg font-bold text-navy">
+                      {approval.type === "Booking cancellation" ? "Cancel" : approval.type === "Schedule conflict resolution" ? "Resolve conflict for" : "Reschedule"} {booking?.service || "booking"}
+                    </h3>
+                    <p className="mt-2 text-xs leading-6 text-[#667794]">
+                      {booking?.customer || customer(booking?.customerId)?.name || "Customer"} · Current appointment: {booking?.date || "Unknown date"} at {booking?.time || "Unknown time"}
+                    </p>
+                    {["Booking reschedule", "Schedule conflict resolution"].includes(approval.type) && (
+                      <p className="mt-2 rounded-lg border border-[#edf0f5] bg-[#fbfcfe] px-3 py-2.5 text-xs font-semibold text-navy">
+                        Proposed time: {approval.date} at {approval.time}{approval.type === "Schedule conflict resolution" && approval.staffId ? ` with ${staff(approval.staffId)?.name || "available staff"}` : ""}
+                      </p>
+                    )}
+                    {approval.reason && <p className="mt-2 text-xs leading-6 text-[#667794]">Reason: {approval.reason}</p>}
+                    <p className="mt-3 max-w-2xl text-xs leading-6 text-[#667794]">The booking changes only after owner approval and ArmorIQ authorization.</p>
+                  </>
+                );
+              })() : (
+                <>
+                  <h3 className="text-lg font-bold text-navy">₹{approval.amount} · {customer(approval.customerId)?.name}</h3>
+                  <p className="mt-2 text-xs leading-6 text-[#667794]">{approval.reason}</p>
+                </>
+              )}
+              {approval.result && <small className="mt-3 block text-[11px] text-[#71809b]">{approval.result}</small>}
+              {approval.armorDecision && <small className="mt-1 block text-[11px] text-[#71809b]">ArmorIQ execution: {approval.armorDecision}</small>}
             </div>
-            <div>
-              {badge(a.status)}
-              {a.status === "Pending" && (
-                <div className="button-row flex gap-2.5 items-center">
-                  <button
-                    className="secondary inline-flex items-center justify-center gap-1.5 bg-white text-[#47613b] border border-[#dce5d7] rounded-md py-2.5 px-3.5 text-xs !text-[#cf440a] !border-[#ffd9c3] !rounded-lg !bg-[#fffaf6] compact py-2 px-2.5 text-tiny"
-                    onClick={() =>
-                      action(`/approvals/${a.id}/decision`, {
-                        decision: "Rejected",
-                      })
-                    }
-                  >
-                    Reject
-                  </button>
-                  <button
-                    className="primary inline-flex items-center justify-center gap-2 bg-[var(--forest)] text-white border border-[var(--forest)] py-3 px-4 rounded-lg text-tiny font-500 whitespace-nowrap !bg-orange !border-orange !rounded-lg !text-xs !py-3 !px-4 !shadow-[0_3px_7px_#ff550b0b] [&:hover:not(:disabled)]:!shadow-[0_5px_15px_#ff550b25] compact py-2 px-2.5 text-tiny"
-                    onClick={() =>
-                      action(`/approvals/${a.id}/decision`, {
-                        decision: "Approved",
-                      })
-                    }
-                  >
-                    Approve
-                  </button>
+            <div className="shrink-0">
+              {badge(expired ? "Expired" : processing ? "Processing" : approval.status)}
+              {!expired && !processing && (approval.status === "Pending" || (executionTypes.has(approval.type) && approval.status === "Approved" && approval.executionStatus !== "Completed")) && (
+                <div className="mt-4 flex items-center gap-2.5">
+                  {approval.status === "Pending" && <button className="rounded-lg border border-[#ffd9c3] bg-[#fffaf6] px-3 py-2.5 text-xs text-[#cf440a]" onClick={() => decide(approval, "Rejected")}>Reject</button>}
+                  <button className="rounded-lg border border-orange bg-orange px-4 py-3 text-xs font-semibold text-white shadow-[0_3px_7px_#ff550b0b] hover:shadow-[0_5px_15px_#ff550b25]" onClick={() => decide(approval, "Approved")}>{actionLabel(approval)}</button>
                 </div>
               )}
+              {approval.status === "Awaiting customer" && <p className="max-w-[210px] text-right text-[11px] leading-5 text-[#71809b]">OperIQ proposed a valid replacement. Waiting for the customer to confirm it.</p>}
+              {processing && <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#fff2e8] px-4 py-3 text-xs font-semibold text-[#cf440a]"><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#ffb98f] border-t-orange" />Approving and executing…</div>}
             </div>
           </article>
-        ))
+          );
+        })
       )}
     </section>
   );

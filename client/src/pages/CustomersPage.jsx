@@ -9,7 +9,6 @@ export default function CustomersPage(props) {
     filtered,
     badge,
     avatar,
-    setWorkflow,
     setGoal,
     setModal,
     query,
@@ -63,7 +62,6 @@ export default function CustomersPage(props) {
                   <button
                     className="text-button inline-flex items-center gap-1.5 bg-transparent p-0 text-[#829274] text-2xs whitespace-nowrap !text-[#f4510c] !text-tiny"
                     onClick={() => {
-                      setWorkflow("enquiry");
                       setGoal(
                         `Review ${c.name}'s history and draft a thoughtful follow-up. Do not change confirmed bookings.`,
                       );

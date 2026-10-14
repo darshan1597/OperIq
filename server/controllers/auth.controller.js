@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { createUser, findUserByEmail, findUserById } from "../services/store.service.js";
+import { acceptInvitationToken, createUser, createWorkspaceMember, findInvitationByToken, findUserByEmail, findUserById } from "../services/store.service.js";
 import { verifyGoogleToken } from "../config/firebase.js";
 import { signToken } from "../utils/token.js";
 import { publicUser } from "../utils/public-user.js";
@@ -50,7 +50,40 @@ export async function googleLogin(req, res) {
 }
 
 export async function currentUser(req, res) {
-  const user = await findUserById(req.user.id);
+  const user = await findUserById(req.user.accountId);
   if (!user) return res.status(401).json({ error: "Account no longer exists" });
   return res.json({ user: publicUser(user) });
+}
+
+export async function invitationDetails(req, res) {
+  const record = await findInvitationByToken(req.params.token);
+  if (!record || record.invitation.status !== "Pending" || (record.invitation.expiresAt && new Date(record.invitation.expiresAt) <= new Date()))
+    throw Object.assign(Error("This invitation is invalid or has expired"), { status: 404 });
+  return res.json({
+    invitation: {
+      email: record.invitation.email,
+      role: record.invitation.role,
+      businessName: record.businessName,
+    },
+  });
+}
+
+export async function acceptInvitation(req, res) {
+  const input = z.object({
+    name: z.string().trim().min(2).max(80),
+    password: z.string().min(8).max(128),
+  }).parse(req.body);
+  const record = await findInvitationByToken(req.params.token);
+  if (!record || record.invitation.status !== "Pending" || (record.invitation.expiresAt && new Date(record.invitation.expiresAt) <= new Date()))
+    throw Object.assign(Error("This invitation is invalid or has expired"), { status: 404 });
+  const user = await createWorkspaceMember({
+    workspaceId: record.workspaceId,
+    businessName: record.businessName,
+    name: input.name,
+    email: record.invitation.email,
+    role: record.invitation.role,
+    passwordHash: await bcrypt.hash(input.password, 12),
+  });
+  await acceptInvitationToken(record.workspaceId, req.params.token, String(user._id));
+  return res.status(201).json({ token: signToken(user), user: publicUser(user) });
 }
