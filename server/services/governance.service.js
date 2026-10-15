@@ -8,6 +8,13 @@ import {
 import { randomUUID } from "node:crypto";
 import { canRun, executeTool } from "./tool.service.js";
 import { reportProgress } from "./request-progress.service.js";
+import { snapshot } from "./store.service.js";
+import {
+    decryptIntentToken,
+    heartbeatDurableHold,
+    persistDurableHold,
+    settleDurableHold,
+} from "./durable-hold.service.js";
 
 const auditEntry = (audit, requestId, stage, details = {}) => {
     const entry = { at: new Date().toISOString(), requestId, stage, ...details };
@@ -15,6 +22,30 @@ const auditEntry = (audit, requestId, stage, details = {}) => {
     console.info("[ArmorIQ audit]", JSON.stringify(entry));
     return entry;
 };
+
+export function governanceErrorMessage(error) {
+    const candidates = [
+        error?.response?.data?.message,
+        error?.response?.data?.error,
+        error?.metadata?.message,
+        error?.metadata?.error,
+        error?.details?.message,
+        error?.message,
+    ];
+    for (const value of candidates) {
+        if (typeof value === "string" && value.trim() && !value.includes("[object Object]"))
+            return value.trim();
+        if (value && typeof value === "object") {
+            try {
+                const serialized = JSON.stringify(value);
+                if (serialized && serialized !== "{}") return serialized;
+            } catch {
+                // Continue to the stable fallback below.
+            }
+        }
+    }
+    return "ArmorIQ approved the request, but its MCP proxy could not execute the tool.";
+}
 
 export const isLive = () => process.env.EXECUTION_MODE === "live";
 export function integrationStatus() {
@@ -80,7 +111,16 @@ export async function createAuthority(goal, steps, { workspaceId, userEmail, aud
         proofCount: token?.stepProofs?.length || 0,
     });
 
-    return { client, token, mcp, workspaceId, userEmail, audit, requestId };
+    return {
+        client,
+        token,
+        mcp,
+        workspaceId,
+        userEmail,
+        audit,
+        requestId,
+        agentId: agentId || process.env.ARMORIQ_AGENT_ID || "operiq-coordinator",
+    };
 }
 
 export async function governedCall(
@@ -154,7 +194,7 @@ export async function governedCall(
         const delegationError = error?.metadata?.delegationError;
         auditEntry(audit, requestId, "invoke.failed", {
             errorName: error?.name || "Error",
-            errorMessage: String(error?.message || error),
+            errorMessage: governanceErrorMessage(error),
             httpStatus: error?.statusCode || error?.response?.status || null,
             mcp: error?.mcp || authority.mcp,
             action: error?.action || step.action,
@@ -301,8 +341,22 @@ export async function governedCall(
                     undefined,
                     userEmail,
                 );
-                await authority.client.markDelegationExecuted(userEmail, delegationId, authority.token.planId);
-                return normalizeResult(result);
+                const outcome = normalizeResult(result);
+                try {
+                    await authority.client.markDelegationExecuted(userEmail, delegationId, authority.token.planId);
+                } catch (error) {
+                    auditEntry(audit, requestId, "delegation.execution_ack_failed", {
+                        delegationId,
+                        errorMessage: governanceErrorMessage(error),
+                    });
+                    console.warn("[ArmorIQ delegation acknowledgment]", JSON.stringify({
+                        requestId,
+                        delegationId,
+                        action: step.action,
+                        error: governanceErrorMessage(error),
+                    }));
+                }
+                return outcome;
             }
             if (["rejected", "expired"].includes(status))
                 throw Error(`ArmorIQ delegation ${status}`);
@@ -338,17 +392,127 @@ export async function governedCall(
         holdSignal,
     ]);
     if (first.kind === "finished") return first.outcome;
+    await persistDurableHold({
+        authority,
+        step,
+        delegationId: first.info.delegationId,
+    });
+    const heartbeat = setInterval(
+        () => void heartbeatDurableHold(first.info.delegationId).catch((error) =>
+            console.error("[ArmorIQ recovery] Hold heartbeat failed", error.message),
+        ),
+        15_000,
+    );
+    heartbeat.unref?.();
+    const trackedContinuation = invocation
+        .then(async (outcome) => {
+            clearInterval(heartbeat);
+            await settleDurableHold(
+                first.info.delegationId,
+                outcome.status === "Completed" ? "Completed" : "Failed",
+                outcome.status === "Completed" ? "" : outcome.reason || "Held action did not complete",
+            );
+            return outcome;
+        })
+        .catch(async (error) => {
+            clearInterval(heartbeat);
+            const message = String(error?.message || error);
+            const status = /rejected/i.test(message)
+                ? "Rejected"
+                : /expired|timed out/i.test(message)
+                  ? "Expired"
+                  : "Failed";
+            await settleDurableHold(first.info.delegationId, status, message);
+            throw error;
+        });
     return {
         status: "Held",
         source: "ArmorIQ approval workflow",
         reason: first.info.reason || "This action requires approval in ArmorIQ.",
         delegationId: first.info.delegationId,
+        approvalExpiresAt: new Date(Number(authority.token.expiresAt) * 1000).toISOString(),
         delegatedAgent: step.agent,
         allowedActions: [step.action],
         executed: false,
-        continuation: invocation,
+        continuation: trackedContinuation,
         requestId,
         audit,
+    };
+}
+
+export async function resumeDurableHold(job) {
+    if (!isLive()) throw Error("Durable Hold recovery requires EXECUTION_MODE=live");
+    const token = decryptIntentToken(job.tokenEnvelope);
+    if (Number(token.expiresAt) * 1000 <= Date.now())
+        return { status: "Expired", reason: "The saved ArmorIQ intent token expired before recovery.", executed: false };
+
+    const client = new ArmorIQClient({
+        apiKey: process.env.ARMORIQ_API_KEY,
+        userId: job.workspaceId,
+        agentId: job.agentId || process.env.ARMORIQ_AGENT_ID || "operiq-coordinator",
+    });
+    const delegationStatus = await client.getDelegationStatus(job.delegationId);
+    if (delegationStatus === "pending") return { status: "Pending", executed: false };
+    if (["rejected", "expired", "none"].includes(delegationStatus))
+        return {
+            status: delegationStatus === "rejected" ? "Rejected" : "Expired",
+            reason: `ArmorIQ delegation ${delegationStatus}`,
+            executed: false,
+        };
+    if (delegationStatus !== "approved")
+        throw Error(`Unexpected ArmorIQ delegation status: ${delegationStatus}`);
+
+    if (!canRun(job.agent, job.action))
+        return { status: "Failed", reason: `${job.agent} no longer has authority for ${job.action}.`, executed: false };
+
+    if (["admin_pause_business_ai", "admin_resume_business_ai"].includes(job.action)) {
+        const expectedStatus = job.action === "admin_pause_business_ai" ? "paused" : "active";
+        const targetState = await snapshot(job.params?.targetWorkspaceId).catch(() => null);
+        const changedAt = Date.parse(targetState?.aiProfile?.platformStatusChangedAt || 0);
+        if (targetState?.aiProfile?.platformStatus === expectedStatus && changedAt >= Date.parse(job.createdAt || 0) - 1_000)
+            return {
+                status: "Completed",
+                source: "OperIQ post-execution state verification",
+                reason: `ArmorIQ approved the request and OperIQ verified that the Business AI is ${expectedStatus}.`,
+                executed: true,
+                requestId: job.requestId,
+            };
+    }
+
+    const result = await client.invoke(
+        job.mcp,
+        job.action,
+        token,
+        {
+            ...job.params,
+            workspaceId: job.workspaceId,
+            _policy_context: { is_financial: false },
+            _delegation_id: job.delegationId,
+            _approvals: 999,
+        },
+        undefined,
+        job.userEmail,
+    );
+    const toolError = result?.result?.isError
+        ? (result.result.content || []).filter((item) => item?.type === "text").map((item) => item.text).filter(Boolean).join(" ") || "MCP execution failed"
+        : "";
+    if (result.status !== "success" || result.result?.isError) throw Error(toolError || "MCP execution failed during Hold recovery");
+    try {
+        await client.markDelegationExecuted(job.userEmail, job.delegationId, token.planId);
+    } catch (error) {
+        console.warn("[ArmorIQ delegation acknowledgment]", JSON.stringify({
+            requestId: job.requestId,
+            delegationId: job.delegationId,
+            action: job.action,
+            error: governanceErrorMessage(error),
+        }));
+    }
+    return {
+        status: "Completed",
+        source: "ArmorIQ durable approval recovery",
+        verified: Boolean(result.verified),
+        executed: true,
+        requestId: job.requestId,
     };
 }
 

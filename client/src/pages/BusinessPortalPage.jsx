@@ -23,6 +23,19 @@ import {
 import { apiClient, apiError } from "../api/client.js";
 import { getPortalPreset } from "./components/portal-presets.js";
 
+const browserSecurityId = () => {
+  const key = "operiq-security-client-id";
+  try {
+    const existing = window.localStorage.getItem(key);
+    if (existing) return existing;
+    const created = window.crypto.randomUUID();
+    window.localStorage.setItem(key, created);
+    return created;
+  } catch {
+    return window.crypto.randomUUID();
+  }
+};
+
 export default function BusinessPortalPage({ slug }) {
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
@@ -34,6 +47,7 @@ export default function BusinessPortalPage({ slug }) {
   const [verificationToken, setVerificationToken] = useState("");
   const [verificationChallengeId, setVerificationChallengeId] = useState("");
   const [activeFlow, setActiveFlow] = useState("");
+  const [clientSessionId] = useState(browserSecurityId);
   useEffect(() => {
     apiClient
       .get(`/public/businesses/${slug}`, {
@@ -52,6 +66,7 @@ export default function BusinessPortalPage({ slug }) {
         `/public/businesses/${slug}/chat`,
         {
           message: text,
+          clientSessionId,
           verificationToken: verificationToken || undefined,
           verificationChallengeId: verificationChallengeId || undefined,
           activeFlow: activeFlow || undefined,

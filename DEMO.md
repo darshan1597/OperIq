@@ -42,7 +42,7 @@ flowchart LR
 
 ## Current verification
 
-- Server automated tests: 47 passing.
+- Server automated tests: 49 passing.
 - Live ArmorIQ diagnostic: `operiq-mcp-v4.read_workspace` captured, tokenized, invoked, verified, and returned a result successfully on 2026-10-14.
 - MCP discovery previously confirmed 24 tools from the public HTTPS endpoint.
 

@@ -15,6 +15,12 @@ import { collectCustomerIdentity, CUSTOMER_IDENTITY_PERMISSIONS, missingCustomer
 import { schemas, validateBooking } from "../services/tool.service.js";
 import { reportProgress } from "../services/request-progress.service.js";
 import {
+  activeSecurityRateLimit,
+  ensureBusinessSecurityEscalation,
+  recordBlockedSecurityAttempt,
+  securityActorKey,
+} from "../services/security-rate-limit.service.js";
+import {
   actionGuidance,
   classifyCustomerIntent,
   intentStep,
@@ -224,6 +230,7 @@ export async function previewAssistant(req, res) {
     message: z.string().trim().min(1).max(1000),
     verificationToken: z.string().uuid().optional(),
     verificationChallengeId: z.string().uuid().optional(),
+    clientSessionId: z.string().uuid().optional(),
     activeFlow: z.enum(["createBooking", "cancelBooking", "rescheduleBooking", "issueRefund", "checkStatus", "confirmAlternative"]).optional(),
     history: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(1000) })).max(10).optional(),
   }).parse(req.body);
@@ -247,6 +254,26 @@ export async function previewAssistant(req, res) {
   const verified = input.verificationToken
     ? await getVerifiedCustomerContext(input.verificationToken, record.workspaceId)
     : null;
+  const actorKey = securityActorKey(req, verified?.customer?.id, input.clientSessionId);
+  await ensureBusinessSecurityEscalation({
+    workspaceId: record.workspaceId,
+    businessName: state.business?.name || profile.slug || "Business",
+  });
+  const activeLimit = await activeSecurityRateLimit(record.workspaceId, actorKey);
+  if (activeLimit)
+    return res.json({
+      answer: "This customer session is temporarily restricted because multiple protected requests were blocked. You can use this Business AI again after the restriction expires.",
+      source: "OperIQ customer security restriction",
+      action: "rateLimited",
+      permission: "disabled",
+      governance: {
+        status: "Blocked",
+        source: "OperIQ customer security restriction",
+        executed: false,
+        rateLimited: true,
+        retryAt: activeLimit.until,
+      },
+    });
   const awaitingAlternative = verified?.requests?.find((item) => item.type === "Booking reschedule" && item.status === "Awaiting customer");
   if (awaitingAlternative && input.activeFlow === "confirmAlternative") {
     if (/\b(?:yes|accept|confirm|works|okay|ok)\b/i.test(question)) {
@@ -687,6 +714,15 @@ export async function previewAssistant(req, res) {
         createdAt: new Date().toISOString(),
       }),
     );
+    const securityDecision = storedGovernance.status === "Blocked"
+      ? await recordBlockedSecurityAttempt({
+          workspaceId: record.workspaceId,
+          businessName: state.business?.name || profile.slug || "Business",
+          actorKey,
+          action: step.action,
+          requestId,
+        })
+      : null;
     if (workflowRunId) await mutate(record.workspaceId, (next) => {
       const run = next.runs.find((item) => item.id === workflowRunId);
       if (run) run.status = storedGovernance.status === "Completed" ? "Waiting for owner approval" : storedGovernance.status;
@@ -718,7 +754,11 @@ export async function previewAssistant(req, res) {
       if (event) Object.assign(event, { status: "Failed", reason: error.message, executed: false });
     }));
     return res.json({
-      answer: step.action === "prepare_booking_reschedule" && /reschedule proposal is already pending/i.test(storedGovernance.reason || "")
+      answer: securityDecision?.businessEscalated
+        ? "ArmorIQ blocked this protected request. This customer is now restricted for 30 minutes. Multiple independent customers have triggered security restrictions, so OperIQ sent a business-wide AI pause request for human approval."
+        : securityDecision?.rateLimited
+        ? "ArmorIQ blocked this protected request. This customer session is now restricted from using the Business AI for 30 minutes. Other customers can continue normally."
+        : step.action === "prepare_booking_reschedule" && /reschedule proposal is already pending/i.test(storedGovernance.reason || "")
         ? "A reschedule request for this appointment is already waiting for the business owner’s decision. I haven’t created a duplicate request."
         : step.action === "create_booking" && storedGovernance.status === "Completed"
         ? `Your ${step.params.service} appointment is confirmed for ${step.params.date} at ${step.params.time}.`
@@ -730,6 +770,7 @@ export async function previewAssistant(req, res) {
       permission,
       governance: {
         ...storedGovernance,
+        ...(securityDecision?.rateLimited ? { rateLimited: true, retryAt: securityDecision.until, businessEscalated: Boolean(securityDecision.businessEscalated) } : {}),
         reason: ["Blocked", "Held", "Failed", "Unexpectedly allowed"].includes(storedGovernance.status) ? undefined : storedGovernance.reason,
       },
       diagnostics: { requestId, audit },

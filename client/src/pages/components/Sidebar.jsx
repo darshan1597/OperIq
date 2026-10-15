@@ -45,7 +45,7 @@ export default function Sidebar({ data, page, pending, allowedPages, navigate, l
         WORKSPACE
       </div>
       <nav>
-        {nav.filter(([name]) => allowedPages.includes(name)).map(([name, Icon]) => (
+        {navigation.filter(([name]) => allowedPages.includes(name)).map(([name, Icon]) => (
           <button
             key={name}
             title={name}

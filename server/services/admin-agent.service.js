@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { createAuthority, governedCall } from "./governance.service.js";
-import { listPlatformWorkspaces, mutate } from "./store.service.js";
+import { createAuthority, governedCall, governanceErrorMessage } from "./governance.service.js";
+import { settleDurableHold } from "./durable-hold.service.js";
+import { listPlatformWorkspaces, mutate, snapshot } from "./store.service.js";
 import { reportProgress } from "./request-progress.service.js";
 
 const readable = (value) => String(value || "").trim();
@@ -53,6 +54,69 @@ function answerFor(action, outcome) {
   return "The governed platform action completed.";
 }
 
+async function waitForAdminState(step, attempts = 12, intervalMs = 500, changedAfter = 0) {
+  const expectedPlatformStatus = step.action === "admin_pause_business_ai"
+    ? "paused"
+    : step.action === "admin_resume_business_ai"
+      ? "active"
+      : null;
+  if (!expectedPlatformStatus || !step.params?.targetWorkspaceId)
+    return { confirmed: false, expectedPlatformStatus };
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const targetState = await snapshot(step.params.targetWorkspaceId).catch(() => null);
+    const changedAt = Date.parse(targetState?.aiProfile?.platformStatusChangedAt || 0);
+    if (targetState?.aiProfile?.platformStatus === expectedPlatformStatus && changedAt >= changedAfter)
+      return { confirmed: true, expectedPlatformStatus };
+    if (attempt < attempts - 1)
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  return { confirmed: false, expectedPlatformStatus };
+}
+
+async function reconcileHeldAdminAction({ workspaceId, eventId, step, delegationId, createdAt, client }) {
+  const expectedPlatformStatus = step.action === "admin_pause_business_ai" ? "paused" : "active";
+  const changedAfter = Date.parse(createdAt) - 1_000;
+  for (let attempt = 0; attempt < 360; attempt += 1) {
+    const decision = await client.getDelegationStatus(delegationId).catch(() => null);
+    if (["rejected", "expired", "none"].includes(decision)) {
+      const status = decision === "rejected" ? "Rejected" : "Expired";
+      await settleDurableHold(delegationId, status, `ArmorIQ delegation ${decision}`);
+      await mutate(workspaceId, (state) => {
+        const event = state.events.find((item) => item.id === eventId);
+        if (event?.status === "Held") Object.assign(event, {
+          status,
+          source: "ArmorIQ approval workflow",
+          reason: decision === "rejected"
+            ? "The administrator rejected this action in ArmorIQ. No platform change was made."
+            : "The ArmorIQ approval expired. Submit the action again to request fresh approval.",
+          executed: false,
+          resumedAt: new Date().toISOString(),
+        });
+      });
+      return;
+    }
+
+    const targetState = await snapshot(step.params.targetWorkspaceId).catch(() => null);
+    const changedAt = Date.parse(targetState?.aiProfile?.platformStatusChangedAt || 0);
+    if (targetState?.aiProfile?.platformStatus === expectedPlatformStatus && changedAt >= changedAfter) {
+      await settleDurableHold(delegationId, "Completed");
+      await mutate(workspaceId, (state) => {
+        const event = state.events.find((item) => item.id === eventId);
+        if (event?.status === "Held") Object.assign(event, {
+          status: "Completed",
+          source: "OperIQ post-execution state verification",
+          reason: `ArmorIQ approved the request and OperIQ verified that the Business AI is ${expectedPlatformStatus}.`,
+          executed: true,
+          resumedAt: new Date().toISOString(),
+        });
+      });
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+  }
+}
+
 export async function askAdminAgent({ question, workspaceId, userEmail }) {
   reportProgress("Admin agent is reviewing the platform request");
   const step = await planAdminQuestion(question);
@@ -69,21 +133,47 @@ export async function askAdminAgent({ question, workspaceId, userEmail }) {
   const outcome = await governedCall(authority, step, { workspaceId, userEmail });
   const { continuation, ...storedOutcome } = outcome;
   const eventId = randomUUID();
+  const createdAt = new Date().toISOString();
   await mutate(workspaceId, (state) => {
     state.events ||= [];
-    state.events.unshift({ id: eventId, agent: "admin", action: step.action, explanation: step.explanation, ...storedOutcome, createdAt: new Date().toISOString() });
+    state.events.unshift({ id: eventId, agent: "admin", action: step.action, explanation: step.explanation, ...storedOutcome, createdAt });
   });
-  if (continuation) continuation.then(async (resumed) => {
+  if (continuation) {
+    void reconcileHeldAdminAction({ workspaceId, eventId, step, delegationId: outcome.delegationId, createdAt, client: authority.client });
+    continuation.then(async (resumed) => {
     await mutate(workspaceId, (state) => {
       const event = state.events.find((item) => item.id === eventId);
-      if (event) Object.assign(event, resumed, { resumedAt: new Date().toISOString() });
+      if (event?.status !== "Completed") Object.assign(event, resumed, { resumedAt: new Date().toISOString() });
     });
   }).catch(async (error) => {
+    const reason = governanceErrorMessage(error);
+    console.error("[Admin Hold continuation]", JSON.stringify({
+      requestId,
+      action: step.action,
+      error: reason,
+      statusCode: error?.statusCode || error?.response?.status || null,
+      response: error?.response?.data || null,
+    }));
+    const { confirmed: executionConfirmed, expectedPlatformStatus } = await waitForAdminState(step, 12, 500, Date.parse(createdAt) - 1_000);
+
+    if (executionConfirmed && outcome.delegationId) {
+      await settleDurableHold(outcome.delegationId, "Completed");
+    }
+
     await mutate(workspaceId, (state) => {
       const event = state.events.find((item) => item.id === eventId);
-      if (event) Object.assign(event, { status: "Failed", reason: error.message, resumedAt: new Date().toISOString() });
+      if (event?.status !== "Completed") Object.assign(event, executionConfirmed
+        ? {
+            status: "Completed",
+            source: "OperIQ post-execution state verification",
+            reason: `ArmorIQ approved the request and OperIQ verified that the Business AI is ${expectedPlatformStatus}. The proxy did not return a usable success response.`,
+            executed: true,
+            resumedAt: new Date().toISOString(),
+          }
+        : { status: "Failed", reason, executed: false, resumedAt: new Date().toISOString() });
     });
   });
+  }
   return {
     answer: answerFor(step.action, outcome),
     action: step.action,

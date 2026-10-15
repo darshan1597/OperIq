@@ -34,6 +34,7 @@ export async function getAdminOverview(_req, res) {
         status: event.status,
         source: event.source,
         reason: event.reason || event.explanation || null,
+        requestedReason: redact(event.params?.reason || ""),
         explanation: event.explanation || null,
         targetBusinessName: event.params?.targetWorkspaceId
           ? businessNameByWorkspace.get(event.params.targetWorkspaceId) || "Unknown workspace"
@@ -45,6 +46,7 @@ export async function getAdminOverview(_req, res) {
         requestId: event.requestId || null,
         createdAt: event.createdAt,
         resumedAt: event.resumedAt || null,
+        approvalExpiresAt: event.approvalExpiresAt || null,
         executed: Boolean(event.executed),
         };
       });
@@ -99,6 +101,7 @@ export async function getAdminOverview(_req, res) {
           delegationId: event.delegationId || null,
           createdAt: event.createdAt,
           resumedAt: event.resumedAt || null,
+          approvalExpiresAt: event.approvalExpiresAt || null,
           executed: Boolean(event.executed),
         })),
     })),
@@ -120,6 +123,24 @@ export async function getAdminOverview(_req, res) {
       })),
   ).sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)));
 
+  const securityAlerts = workspaces.flatMap(({ workspaceId, data }) => {
+    const automation = data.securityAutomation;
+    if (!automation) return [];
+    const governedEvent = (data.events || []).find(
+      (event) => event.delegationId && event.delegationId === automation.delegationId,
+    );
+    return [{
+      workspaceId,
+      businessName: data.business?.name || "Unnamed workspace",
+      reason: redact(automation.reason || "Repeated ArmorIQ-blocked customer actions"),
+      status: governedEvent?.status || automation.status || "Detected",
+      delegationId: automation.delegationId || null,
+      triggeredAt: automation.triggeredAt || null,
+      rateLimitedUntil: automation.until || null,
+      pauseExecuted: governedEvent?.action === "admin_pause_business_ai" && Boolean(governedEvent.executed),
+    }];
+  }).sort((left, right) => String(right.triggeredAt).localeCompare(String(left.triggeredAt)));
+
   return res.json({
     metrics: {
       workspaces: workspaces.length,
@@ -134,6 +155,7 @@ export async function getAdminOverview(_req, res) {
     workflows,
     workspaces: workspaceSummaries,
     pendingApprovals,
+    securityAlerts,
     armorDashboardUrl: process.env.ARMORIQ_DASHBOARD_URL || "",
     refreshedAt: new Date().toISOString(),
   });

@@ -12,6 +12,7 @@ import { integrationStatus } from "./services/governance.service.js";
 import { initStore, storageMode } from "./services/store.service.js";
 import { progressMiddleware } from "./services/request-progress.service.js";
 import { readProgress } from "./controllers/progress.controller.js";
+import { startHoldRecoveryWorker } from "./services/hold-recovery.worker.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -19,6 +20,7 @@ const host = process.env.HOST || "0.0.0.0";
 
 await connectDb();
 await initStore();
+startHoldRecoveryWorker();
 
 app.use(express.json({ limit: "3mb" }));
 app.use(progressMiddleware);

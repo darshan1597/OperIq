@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, ArrowUpRight, CheckCircle2, Clock3 } from "lucide-react";
 import StatusBadge from "./StatusBadge.jsx";
 import WorkflowModal from "./WorkflowModal.jsx";
@@ -23,6 +23,33 @@ const standaloneTimeline = (item) => ({
       : item.reason,
   events: [{ ...item, step: 1, totalSteps: 1 }],
 });
+
+function ApprovalCountdown({ expiresAt }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const remaining = Date.parse(expiresAt) - now;
+  if (!Number.isFinite(remaining)) return null;
+  if (remaining <= 0)
+    return (
+      <div className="rounded-lg bg-[#fff0f1] px-3 py-2 text-[10px] font-bold text-[#b93f4a]">
+        Approval expired. Submit the action again to create a fresh ArmorIQ approval request.
+      </div>
+    );
+
+  const totalSeconds = Math.ceil(remaining / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return (
+    <div className="rounded-lg bg-[#fff7ed] px-3 py-2 text-[10px] font-bold text-[#c55212]">
+      Approve within {minutes}:{String(seconds).padStart(2, "0")} · expires {date(expiresAt)}
+    </div>
+  );
+}
 
 export default function GovernanceTable({ title, actions, data, controls }) {
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
@@ -92,10 +119,20 @@ export default function GovernanceTable({ title, actions, data, controls }) {
                     {item.requestId || "Not supplied"}
                   </code>
                 </div>
+                {item.requestedReason && (
+                  <p className="m-0 font-semibold text-[11px] leading-5 text-[#465873] md:col-start-2 md:col-end-4">
+                    Requested reason: {item.requestedReason}
+                  </p>
+                )}
                 <p className="m-0 text-[11px] leading-5 text-[#68768c] md:col-start-2 md:col-end-4">
                   {item.reason || "No additional policy reason was supplied."} ·{" "}
                   {item.executed ? "Tool executed." : "Tool not executed."}
                 </p>
+                {item.status === "Held" && item.approvalExpiresAt && (
+                  <div className="md:col-start-2 md:col-end-4">
+                    <ApprovalCountdown expiresAt={item.approvalExpiresAt} />
+                  </div>
+                )}
                 <div className="flex items-center justify-end gap-3 md:col-start-3">
                   <button
                     className="rounded-lg border border-[#ffd1b9] bg-[#fff7f2] px-2.5 py-2 text-[9px] font-extrabold text-[#d84d08]"

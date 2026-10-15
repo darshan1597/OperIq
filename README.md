@@ -64,6 +64,8 @@ To reproduce the integration:
 4. Set `EXECUTION_MODE=live` and restart. Run a workflow, optionally enabling the unplanned export probe. Record an actual successful allowed call and an actual ArmorIQ denial, including the dashboard trace. Unexpected export permission is reported as **Unexpectedly allowed**, not relabeled a block.
 5. A policy hold is recorded with its ArmorIQ delegation ID. Resolve it in ArmorIQ. The pending invocation remains fail-closed and the workflow automatically continues from that exact step after approval. The separate compensation inbox represents business approval records and must not be presented as the ArmorIQ approval interface.
 
+Held invocations are persisted as durable governance jobs. Their short-lived intent tokens are encrypted with `GOVERNANCE_JOB_SECRET` (or `JWT_SECRET` when the separate key is omitted). A leased recovery worker checks pending delegations after a server restart, rejects expired or denied approvals, and atomically claims approved jobs before resuming them. Keep this encryption key stable across deployments; changing it makes existing pending jobs unrecoverable.
+
 Application role denials are labeled **Application role boundary**. ArmorIQ proxy errors are failures, not fabricated security blocks. Missing credentials in live mode fail closed without sandbox fallback.
 
 ## Architecture and current limits

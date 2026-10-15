@@ -140,8 +140,12 @@ export default function WorkflowModal({ workflow, close }) {
                             2. Approved
                           </span>
                           <span className="text-[#9aa5b6]">→</span>
-                          <span className="rounded-full bg-[#e9f7ef] px-2 py-1 text-[#15784b]">
-                            3. Resumed and executed
+                          <span
+                            className={`rounded-full px-2 py-1 ${event.executed ? "bg-[#e9f7ef] text-[#15784b]" : "bg-[#fff0f1] text-[#b93f4a]"}`}
+                          >
+                            {event.executed
+                              ? "3. Resumed and executed"
+                              : "3. Resumed, execution failed"}
                           </span>
                         </>
                       ) : (
@@ -150,6 +154,11 @@ export default function WorkflowModal({ workflow, close }) {
                         </span>
                       )}
                     </div>
+                  )}
+                  {event.status === "Held" && event.approvalExpiresAt && (
+                    <p className="mb-3 mt-0 text-[10px] font-bold text-[#c55212]">
+                      Approval deadline: {date(event.approvalExpiresAt)}. After this time, submit the action again for fresh approval.
+                    </p>
                   )}
                   <div className="space-y-1 text-[9px] text-[#52627a]">
                     <code className="block break-all">
@@ -170,7 +179,7 @@ export default function WorkflowModal({ workflow, close }) {
                     )}
                     {event.resumedAt && (
                       <code className="block">
-                        Approved execution resumed: {date(event.resumedAt)}
+                        Approved execution {event.executed ? "completed" : "attempted"}: {date(event.resumedAt)}
                       </code>
                     )}
                   </div>

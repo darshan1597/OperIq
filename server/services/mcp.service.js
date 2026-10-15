@@ -8,16 +8,30 @@ export function createMcpServer() {
             `OperIQ operation: ${name}`,
             schema.shape,
             async (params) => {
+                const startedAt = Date.now();
+                console.info("[MCP tool]", JSON.stringify({ name, stage: "started" }));
                 try {
+                    const result = await executeTool(name, params);
+                    console.info("[MCP tool]", JSON.stringify({
+                        name,
+                        stage: "completed",
+                        durationMs: Date.now() - startedAt,
+                    }));
                     return {
                         content: [
                         {
                             type: "text",
-                            text: JSON.stringify(await executeTool(name, params)),
+                            text: JSON.stringify(result),
                         },
                         ],
                     };
                 } catch (e) {
+                    console.error("[MCP tool]", JSON.stringify({
+                        name,
+                        stage: "failed",
+                        durationMs: Date.now() - startedAt,
+                        error: String(e?.message || e),
+                    }));
                     return {
                         isError: true,
                         content: [{ type: "text", text: e.message }],
