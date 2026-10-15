@@ -27,7 +27,6 @@ yarn-error.log*
 test-results/
 playwright-report/
 blob-report/
-docs/images/
 
 # Editor and operating-system files
 .vscode/
