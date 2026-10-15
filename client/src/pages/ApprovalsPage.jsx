@@ -68,7 +68,7 @@ export default function ApprovalsPage({
             approval.executionStatus === "Executing";
           return (
             <article
-              className="flex items-start justify-between gap-5 border-t border-[#edf0f5] py-6 phone:flex-col"
+              className="flex items-start justify-between gap-5 border-t border-[#edf0f5] py-6 mobile:flex-col"
               key={approval.id}
             >
               <div className="min-w-0 flex-1">
@@ -173,7 +173,7 @@ export default function ApprovalsPage({
                   </small>
                 )}
               </div>
-              <div className="shrink-0">
+              <div className="shrink-0 mobile:w-full">
                 {badge(
                   expired
                     ? "Expired"

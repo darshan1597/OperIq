@@ -164,7 +164,7 @@ export default function BusinessPortalPage({ slug }) {
       className="min-h-screen bg-[#fffaf7] font-ui text-navy"
     >
       <header className="sticky top-0 z-40 border-b border-[#eee8e3] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1480px] items-center justify-between px-6">
+        <div className="mx-auto flex min-h-16 max-w-[1480px] items-center justify-between gap-3 px-4 py-2 sm:px-6 sm:py-0">
           <a href="#home" className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--portal-accent)] text-sm font-bold text-white shadow-lg">
               {initials}
@@ -173,7 +173,7 @@ export default function BusinessPortalPage({ slug }) {
               <strong className="block text-base leading-5">
                 {business.name}
               </strong>
-              <small className="block text-[10px] text-[#71809b]">
+              <small className="block text-[10px] text-[#71809b] mobile:hidden">
                 {business.industry}
               </small>
             </span>
@@ -192,9 +192,9 @@ export default function BusinessPortalPage({ slug }) {
           <div className="flex items-center gap-2">
             <a
               href="#assistant"
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-accent)] px-4 py-2.5 text-xs font-semibold text-white shadow-lg"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-accent)] px-3 py-2.5 text-xs font-semibold text-white shadow-lg sm:px-4"
             >
-              <Bot size={15} /> Ask our AI
+              <Bot size={15} /> <span className="mobile:hidden">Ask our AI</span><span className="hidden mobile:inline">Ask AI</span>
             </a>
             <button
               onClick={() => setMenuOpen((open) => !open)}
@@ -206,7 +206,7 @@ export default function BusinessPortalPage({ slug }) {
           </div>
         </div>
         {menuOpen && (
-          <nav className="grid gap-1 border-t border-[#edf0f4] bg-white px-6 py-3 tablet:hidden">
+          <nav className="hidden gap-1 border-t border-[#edf0f4] bg-white px-4 py-3 tablet:grid sm:px-6">
             {links.map(([label, id]) => (
               <a
                 key={id}
@@ -221,11 +221,11 @@ export default function BusinessPortalPage({ slug }) {
         )}
       </header>
 
-      <main className="mx-auto grid max-w-[1480px] grid-cols-[minmax(0,1fr)_390px] gap-6 px-6 py-5 compact:grid-cols-1 mobile:px-4">
+      <main className="mx-auto grid max-w-[1480px] grid-cols-[minmax(0,1fr)_390px] gap-6 px-4 py-4 sm:px-6 sm:py-5 compact:grid-cols-1">
         <div className="min-w-0 space-y-5">
           <section
             id="home"
-            className="relative min-h-[430px] overflow-hidden rounded-[28px] border border-[#eee4db] bg-[var(--portal-pale)]"
+            className="relative min-h-[430px] overflow-hidden rounded-[28px] border border-[#eee4db] bg-[var(--portal-pale)] mobile:min-h-[390px] mobile:rounded-2xl"
           >
             {business.heroImage ? (
               <img
@@ -246,7 +246,7 @@ export default function BusinessPortalPage({ slug }) {
               <span className="inline-flex items-center gap-2 rounded-full border border-[var(--portal-border)] bg-white/90 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-[var(--portal-accent)]">
                 <Sparkles size={12} /> {preset.eyebrow}
               </span>
-              <h1 className="mt-6 text-[54px] font-black leading-[1.04] tracking-[-2.5px] mobile:text-4xl">
+              <h1 className="mt-6 text-[54px] font-black leading-[1.04] tracking-[-2.5px] mobile:text-[38px] mobile:tracking-[-1.5px]">
                 {preset.headline}
                 <span className="block text-[var(--portal-accent)]">
                   {preset.accent}
@@ -466,7 +466,7 @@ export default function BusinessPortalPage({ slug }) {
           send={send}
         />
       </main>
-      <footer className="mx-auto flex max-w-[1480px] items-center justify-between px-6 py-7 text-[10px] text-[#8b96a8] mobile:flex-col mobile:gap-2">
+      <footer className="mx-auto flex max-w-[1480px] items-center justify-between px-4 py-7 text-center text-[10px] text-[#8b96a8] sm:px-6 mobile:flex-col mobile:gap-2">
         <span>
           © {new Date().getFullYear()} {business.name}
         </span>
@@ -495,7 +495,7 @@ function ChatPanel({
   return (
     <aside
       id="assistant"
-      className="sticky top-[84px] flex h-[calc(100vh-104px)] min-h-[620px] flex-col overflow-hidden rounded-[28px] border border-[#eadfd7] bg-white shadow-[0_25px_80px_#8f5d3b18] compact:static compact:h-[720px] compact:min-h-0"
+      className="sticky top-[84px] flex h-[calc(100vh-104px)] min-h-[620px] flex-col overflow-hidden rounded-[28px] border border-[#eadfd7] bg-white shadow-[0_25px_80px_#8f5d3b18] compact:static compact:h-[680px] compact:min-h-0 mobile:h-[min(680px,calc(100vh-24px))] mobile:rounded-2xl"
     >
       <div className="flex items-center gap-3 border-b border-[#edf0f4] p-5">
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--portal-pale)] text-[var(--portal-accent)]">

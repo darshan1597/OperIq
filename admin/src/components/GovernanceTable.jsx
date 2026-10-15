@@ -64,7 +64,7 @@ export default function GovernanceTable({ title, actions, data, controls }) {
   return (
     <>
       <section className="mt-5 overflow-hidden rounded-2xl border border-[#e2e6ed] bg-white">
-        <div className="flex items-center justify-between gap-5 border-b border-[#e8ebf0] p-5 max-md:block">
+        <div className="flex items-center justify-between gap-5 border-b border-[#e8ebf0] p-4 sm:p-5 max-md:block">
           <div>
             <h2 className="m-0 text-[17px] font-bold">{title}</h2>
             <p className="mt-1 text-[11px] text-[#7c889d]">
@@ -81,7 +81,7 @@ export default function GovernanceTable({ title, actions, data, controls }) {
           <div>
             {actions.map((item) => (
               <article
-                className="grid grid-cols-1 items-center gap-4 border-b border-[#edf0f4] px-5 py-[18px] last:border-0 md:grid-cols-[105px_minmax(180px,1fr)_minmax(190px,.8fr)]"
+                className="grid grid-cols-1 items-center gap-4 border-b border-[#edf0f4] px-4 py-4 last:border-0 sm:px-5 sm:py-[18px] md:grid-cols-[105px_minmax(180px,1fr)_minmax(190px,.8fr)]"
                 key={`${item.workspaceId}-${item.id}`}
               >
                 <StatusBadge
@@ -133,7 +133,7 @@ export default function GovernanceTable({ title, actions, data, controls }) {
                     <ApprovalCountdown expiresAt={item.approvalExpiresAt} />
                   </div>
                 )}
-                <div className="flex items-center justify-end gap-3 md:col-start-3">
+                <div className="flex flex-wrap items-center justify-start gap-3 md:col-start-3 md:justify-end">
                   <button
                     className="rounded-lg border border-[#ffd1b9] bg-[#fff7f2] px-2.5 py-2 text-[9px] font-extrabold text-[#d84d08]"
                     onClick={() => openTimeline(item)}

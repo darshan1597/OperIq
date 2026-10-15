@@ -3,7 +3,7 @@ import { GlobalSearch } from "./OverviewHero.jsx";
 
 export default function DashboardHeader({ data, page, pending, navigate }) {
   return (
-    <header className="topbar h-[77px] py-0 px-[38px] flex items-center justify-between bg-white border-b border-border desktop:py-0 desktop:px-6 phone:h-[62px] phone:py-0 phone:px-[15px] !h-[66px] ![border-bottom:none] !bg-transparent !py-0 !px-10 !gap-5 wide:!py-0 wide:!px-[55px] laptop:!py-0 laptop:!px-[26px] mobile:!py-0 mobile:!px-4 mobile:!h-[62px]">
+    <header className="topbar h-[77px] py-0 px-[38px] flex items-center justify-between bg-white border-b border-border desktop:py-0 desktop:px-6 phone:h-[62px] phone:py-0 phone:px-[15px] !h-[66px] ![border-bottom:none] !bg-transparent !py-0 !px-10 !gap-5 wide:!py-0 wide:!px-[55px] laptop:!py-0 laptop:!px-[26px] mobile:!sticky mobile:!top-0 mobile:!z-10 mobile:!h-auto mobile:!min-h-[62px] mobile:!bg-white mobile:!pl-16 mobile:!pr-4 mobile:!py-2 mobile:!shadow-sm">
       <div className="breadcrumb flex items-center gap-[13px] text-tiny text-[#969d97] [&_strong]:text-[#47534b] [&_strong]:font-500 [&_span]:text-[#d0d5ce] phone:text-2xs phone:gap-[7px] !text-tiny !text-[#8490a5] [&_strong]:!text-[#465775] laptop:!hidden">
         Workspace <span>/</span>
         <strong>{page}</strong>

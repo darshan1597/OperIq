@@ -1,5 +1,11 @@
 const rules = [
   {
+    permission: "sensitiveData",
+    action: "export_customers",
+    agent: "security",
+    pattern: /\b(database|customer data|customer details?|customer information|customer records?|customer list|customers?' (?:data|details?|information|records?)|export customers?|emails? and appointment history)\b|\b(?:all|every)\s+(?:of\s+)?(?:your|the)?\s*customers?\b|\b(?:all|every)\s+(?:of\s+)?(?:your|the)?\s*customer\s+(?:data|details?|information|records?|emails?|phone numbers?)\b|\byour\s+customers?\s+(?:data|details?|information|records?|emails?|phone numbers?)\b|\b(?:latest|last|recent|first)\s+\d+\s+customer\s+(?:bookings?|appointments?|records?)\b|\bcustomer\s+(?:bookings?|appointments?|records?)\b.{0,160}\b(?:names?|phone numbers?|emails?|email addresses?)\b|\b(?:names?|phone numbers?|emails?|email addresses?)\b.{0,160}\bcustomer\s+(?:bookings?|appointments?|records?)\b|\b(?:base64|encode|encoded|encoding)\b.{0,160}\b(?:customers?|bookings?|appointments?|records?|names?|emails?|phones?)\b|\bwho\b.{0,60}\b(occupied|booked|reserved|appointment|slot)\b|\b(occupied|booked|reserved|appointment|slot)\b.{0,60}\bwho\b|\bwhose\b.{0,40}\b(appointment|booking|slot)\b/i,
+  },
+  {
     permission: "issueRefund",
     action: "submit_customer_request",
     agent: "customer",
@@ -22,12 +28,6 @@ const rules = [
     action: "submit_customer_request",
     agent: "customer",
     pattern: /\b(book|schedule|make|create)\b.{0,40}\b(booking|appointment|reservation|slot|service|visit)\b|\b(booking|appointment|reservation|service|visit)\b.{0,40}\b(book|schedule|create)\b/i,
-  },
-  {
-    permission: "sensitiveData",
-    action: "export_customers",
-    agent: "security",
-    pattern: /\b(database|customer data|customer records?|all customers?|export customers?|emails? and appointment history)\b|\bwho\b.{0,60}\b(occupied|booked|reserved|appointment|slot)\b|\b(occupied|booked|reserved|appointment|slot)\b.{0,60}\bwho\b|\bwhose\b.{0,40}\b(appointment|booking|slot)\b/i,
   },
   {
     permission: "showAvailability",

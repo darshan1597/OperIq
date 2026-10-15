@@ -43,7 +43,7 @@ export default function TeamTasksPage(props) {
           </button>
         </form>
       )}
-      <div className="staff-grid grid grid-cols-3 gap-5 mb-[25px] tablet:gap-2.5 phone:[grid-template-columns:1fr]">
+      <div className="staff-grid grid grid-cols-3 gap-5 mb-[25px] tablet:grid-cols-2 tablet:gap-2.5 mobile:grid-cols-1">
         {!data.staff.length && (
           <section className="col-span-full card bg-white border border-border rounded-xl">
             <Empty
@@ -85,7 +85,7 @@ export default function TeamTasksPage(props) {
           </section>
         ))}
       </div>
-      <div className="kanban grid grid-cols-3 gap-5 tablet:gap-2.5 phone:[grid-template-columns:1fr]">
+      <div className="kanban grid grid-cols-3 gap-5 tablet:grid-cols-2 tablet:gap-2.5 mobile:grid-cols-1">
         {["To do", "In progress", "Done"].map((status) => (
           <section
             className="kanban-column bg-[#edf1e7] rounded-[9px] p-[18px] min-h-[300px] [&>h3]:text-xs [&>h3]:flex [&>h3]:justify-between [&>h3]:mb-5 tablet:p-3 phone:min-h-[100px] !bg-[#f0f2f7] !rounded-xl !border !border-[#e7ebf1] [&>h3]:!text-[#2e4263]"

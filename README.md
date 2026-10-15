@@ -2,6 +2,36 @@
 
 A MERN operations workspace for service businesses. Coordinate customer enquiries, appointment proposals, staff tasks, and complaint resolution from one dashboard.
 
+## Product walkthrough
+
+### Business operations workspace
+
+Owners manage customers, bookings, staff, tasks, approvals, and AI-assisted operations from one workspace.
+
+![OperIQ business dashboard](./docs/images/business-operations-dashboard.png)
+
+### Governed customer assistant
+
+The public Business AI answers business questions and routes protected actions through ArmorIQ. Sensitive bulk-customer-data requests are blocked without exposing private records.
+
+![ArmorIQ blocking a customer-data export](./docs/images/customer-data-export-blocked.png)
+
+### Human approval for consequential actions
+
+ArmorIQ can hold an action until an authorized member makes a decision. OperIQ displays the approval deadline and keeps the protected tool unexecuted while the request is pending.
+
+![ArmorIQ Hold awaiting approval](./docs/images/armoriq-hold-awaiting-approval.png)
+
+After approval, the durable workflow resumes the exact governed action and records its final outcome.
+
+![ArmorIQ Hold resumed after approval](./docs/images/armoriq-hold-resumed-and-executed.png)
+
+### Privacy-safe governance audit
+
+The administration console shows allowed, held, blocked, and failed actions using governance metadata without exposing customer records.
+
+![OperIQ governance audit](./docs/images/privacy-safe-governance-audit.png)
+
 ## Run locally
 
 Requires Node.js 22+ and npm.
@@ -35,10 +65,6 @@ UI regression checks require Google Chrome. They check all existing pages, globa
 
 Application components use Tailwind utility classes directly in their React `className` values. Dynamic status classes are written as complete Tailwind class strings so the build can discover them without a generated style file. `client/src/index.css` contains only the Tailwind entry directives, fonts, shared design variables, browser defaults, and the spinner keyframe. Preflight remains disabled to preserve the existing native control geometry.
 
-`client/src/pages/components/Brand.jsx` renders the generated transparent symbol from `client/public/brand/operiq-symbol.png`; the navy/orange `operiq` wordmark is separate, selectable React text. No product name is embedded in the image.
-
-For a future styling migration, run `npm run visual:before` from `client/`, then compare with `npm run visual:after`. The script freezes workspace data and compares computed styles, element bounds, and screenshots across all pages, dialogs, and responsive widths. It excludes the intentional brand replacement and allows at most two RGB levels of Chromium compositing noise in screenshots; computed styles and bounds must match exactly. Local captures and reports live in ignored `client/.local/tailwind-parity/`.
-
 After building the client, `npm start` from `server/` serves the UI and API at port 4000. Set `MONGODB_URI` in `server/.env` to use MongoDB. Without it, records persist to `server/.local/state.json`; this fallback is explicitly displayed in Settings. MongoDB connection failures do not silently fall back.
 
 ## What works
@@ -54,7 +80,7 @@ After building the client, `npm start` from `server/` serves the UI and API at p
 
 ## Live ArmorIQ integration
 
-OperIQ is configured for live ArmorIQ enforcement through the registered `operiq-mcp-v4` server. The current server advertises 24 tools. The live diagnostic verifies plan capture, short-lived intent-token issuance, Merkle proof use, proxy invocation, and a verified MCP result. No credentials are included in this repository.
+OperIQ is configured for live ArmorIQ enforcement through the registered `operiq-mcp-v5` server. The current server advertises 24 tools. The live diagnostic verifies plan capture, short-lived intent-token issuance, Merkle proof use, proxy invocation, and a verified MCP result. No credentials are included in this repository.
 
 To reproduce the integration:
 
@@ -70,7 +96,9 @@ Application role denials are labeled **Application role boundary**. ArmorIQ prox
 
 ## Architecture and current limits
 
-`client/`: React, React Router, Vite, Tailwind, and Lucide for the business dashboard and public customer portal. `admin/`: a separate React, Router, Vite, and Tailwind application for platform monitoring. `server/`: Express, Mongoose, MCP SDK, ArmorIQ SDK, and an OpenAI-compatible planner.
+`client/`: React, React Router, Vite, Tailwind, and Lucide for the business dashboard and public customer portal. 
+`admin/`: a separate React, Router, Vite, and Tailwind application for platform monitoring. 
+`server/`: Express, Mongoose, MCP SDK, ArmorIQ SDK, and an OpenAI-compatible planner.
 
 The coordinator produces a structured plan; customer, operations, resolution, and access executors have different application tool permissions. They share one model. In live mode, the installed ArmorIQ SDK captures the plan, issues a short-lived intent token, and routes MCP calls through policy enforcement.
 

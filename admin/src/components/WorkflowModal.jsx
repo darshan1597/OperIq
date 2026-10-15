@@ -34,7 +34,7 @@ export default function WorkflowModal({ workflow, close }) {
         aria-modal="true"
         aria-label="Administrator workflow timeline"
       >
-        <header className="flex items-start justify-between gap-5 border-b border-[#e7ebf1] p-6">
+        <header className="flex items-start justify-between gap-4 border-b border-[#e7ebf1] p-4 sm:gap-5 sm:p-6">
           <div>
             <span className="text-[9px] font-black uppercase tracking-[1.7px] text-[#f05a12]">
               {workflow.businessName}
@@ -47,7 +47,7 @@ export default function WorkflowModal({ workflow, close }) {
               Privacy-safe agent and ArmorIQ execution metadata.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <StatusBadge status={workflow.status} />
             <button
               onClick={close}
@@ -58,7 +58,7 @@ export default function WorkflowModal({ workflow, close }) {
             </button>
           </div>
         </header>
-        <div className="mx-6 mt-5 grid gap-3 rounded-xl border border-[#dfe6f0] bg-[#f7f9fc] px-4 py-3 text-[11px] leading-5 text-[#53627c] sm:grid-cols-2">
+        <div className="mx-4 mt-4 grid gap-3 rounded-xl border border-[#dfe6f0] bg-[#f7f9fc] px-4 py-3 text-[11px] leading-5 text-[#53627c] sm:mx-6 sm:mt-5 sm:grid-cols-2">
           <div>
             <strong className="block text-[9px] uppercase tracking-wide text-[#8793a7]">
               Outcome
@@ -84,7 +84,7 @@ export default function WorkflowModal({ workflow, close }) {
             </div>
           )}
         </div>
-        <div className="max-h-[calc(88vh-170px)] overflow-y-auto px-6 pb-6 pt-1">
+        <div className="max-h-[calc(88vh-170px)] overflow-y-auto px-4 pb-4 pt-1 sm:px-6 sm:pb-6">
           {workflow.events.length === 0 ? (
             <div className="grid min-h-48 place-items-center text-xs text-[#8995a8]">
               No execution steps were recorded.
@@ -107,7 +107,7 @@ export default function WorkflowModal({ workflow, close }) {
                   )}
                 </span>
                 <div className="min-w-0">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <strong className="text-xs capitalize">
                       Step {event.step || index + 1}:{" "}
                       {String(event.action || "action").replaceAll("_", " ")}

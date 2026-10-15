@@ -198,7 +198,7 @@ export default function OverviewPage(props) {
             WORKFLOWS
           </span>
         </div>
-        <div className="workflow-grid grid grid-cols-3 gap-[17px] tablet:gap-2.5 phone:[grid-template-columns:1fr]">
+        <div className="workflow-grid grid grid-cols-3 gap-[17px] tablet:grid-cols-2 tablet:gap-2.5 mobile:grid-cols-1">
           {[
             {
               id: "enquiry",

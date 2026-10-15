@@ -43,7 +43,7 @@ export default function AccessPage({ api, setNotice, start, data }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-6 compact:grid-cols-1">
       <section className="rounded-2xl border border-border bg-white p-6 mobile:p-4">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 mobile:flex-col">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#fff0e5] text-orange">
             <UserCog size={20} />
           </span>
@@ -58,7 +58,7 @@ export default function AccessPage({ api, setNotice, start, data }) {
           </div>
           <button
             onClick={() => start("access")}
-            className="rounded-xl bg-orange px-4 py-3 text-xs font-semibold text-white"
+            className="rounded-xl bg-orange px-4 py-3 text-xs font-semibold text-white mobile:w-full"
           >
             Ask AI to onboard
           </button>
@@ -93,7 +93,7 @@ export default function AccessPage({ api, setNotice, start, data }) {
                   Owner
                 </span>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mobile:w-full mobile:[&>select]:flex-1">
                   <select
                     value={member.role}
                     onChange={(event) =>
@@ -124,7 +124,7 @@ export default function AccessPage({ api, setNotice, start, data }) {
               {data.invitations.map((invitation) => (
                 <div
                   key={invitation.id}
-                  className="flex items-center gap-3 py-3"
+                  className="flex items-center gap-3 py-3 mobile:flex-col mobile:items-start"
                 >
                   <div className="min-w-0 flex-1">
                     <strong className="block truncate text-xs text-navy">
@@ -149,7 +149,7 @@ export default function AccessPage({ api, setNotice, start, data }) {
                           )
                           .then(() => setNotice("Invitation link copied"))
                       }
-                      className="rounded-lg border border-[#ffd7bd] bg-[#fff8f2] px-3 py-2 text-[10px] font-semibold text-orange"
+                      className="rounded-lg border border-[#ffd7bd] bg-[#fff8f2] px-3 py-2 text-[10px] font-semibold text-orange mobile:w-full"
                     >
                       Copy invite link
                     </button>

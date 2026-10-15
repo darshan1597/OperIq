@@ -22,8 +22,8 @@ export default function LoginPage({ onLogin }) {
     }
   };
   return (
-    <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_15%_10%,#fff0e7,transparent_28%)] p-6">
-      <section className="w-full max-w-[440px] rounded-3xl border border-[#e6e9f0] bg-white p-10 shadow-[0_25px_80px_#12213b17]">
+    <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_15%_10%,#fff0e7,transparent_28%)] p-4 sm:p-6">
+      <section className="w-full max-w-[440px] rounded-2xl border border-[#e6e9f0] bg-white p-6 shadow-[0_25px_80px_#12213b17] sm:rounded-3xl sm:p-10">
         <Brand />
         <span className="mt-9 inline-flex items-center gap-2 rounded-full bg-[#fff1e8] px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#d84d08]">
           <ShieldCheck size={14} /> Platform administration

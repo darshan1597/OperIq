@@ -64,7 +64,7 @@ export default function App() {
   if (!data) return <LoadingScreen error={error} onRetry={controller.load} onLogout={controller.logout} />;
 
   return (
-    <div className={dashboardClassName(page)}>
+    <div className={`${dashboardClassName(page)} mobile:[&_main]:!ml-0`}>
       <Sidebar data={data} page={page} pending={pending} allowedPages={controller.allowedPages} navigate={controller.navigate} logout={controller.logout} />
       <main>
         <DashboardHeader data={data} page={page} pending={pending} navigate={controller.navigate} />

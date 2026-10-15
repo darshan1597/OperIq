@@ -40,16 +40,6 @@ flowchart LR
 - Customer status contains only the verified customer's records.
 - Admin monitoring shows aggregate metadata without customer names, email addresses, phone numbers, or booking contents.
 
-## Current verification
-
-- Server automated tests: 49 passing.
-- Live ArmorIQ diagnostic: `operiq-mcp-v4.read_workspace` captured, tokenized, invoked, verified, and returned a result successfully on 2026-10-14.
-- MCP discovery previously confirmed 24 tools from the public HTTPS endpoint.
-
-## Backup recording
-
-Record the five demo sections above in one continuous take. Keep a second short recording containing the ArmorIQ Hold approval and the Block timeline because those depend on the live external service. Avoid showing `.env`, access tokens, email addresses, phone numbers, or raw customer records.
-
 ## Why ArmorIQ is essential
 
 The model proposes what it wants to do, but it cannot authorize itself. ArmorIQ binds the plan to a short-lived intent token, checks the exact MCP tool against policy, holds consequential actions for a human decision, blocks forbidden access, and produces evidence that OperIQ can display in its audit timeline.

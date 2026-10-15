@@ -322,7 +322,7 @@ export async function previewAssistant(req, res) {
     });
   }
   const requestedIntent = conversationIntent;
-  if (statusRequested && verified)
+  if (requestedIntent.permission !== "sensitiveData" && statusRequested && verified)
     return res.json({
       answer: formatCustomerStatus(verified),
       source: "Customer agent",
@@ -331,7 +331,7 @@ export async function previewAssistant(req, res) {
       ...(awaitingAlternative ? { activeFlow: "confirmAlternative" } : { clearActiveFlow: true }),
       governance: { status: "Not required", source: "Verified customer records", executed: false },
     });
-  if (statusRequested && !verified) {
+  if (requestedIntent.permission !== "sensitiveData" && statusRequested && !verified) {
     const customerMessages = [...(input.history || []).filter((item) => item.role === "user").map((item) => item.text), question];
     const identity = collectCustomerIdentity(customerMessages);
     const missing = missingCustomerIdentityFields(identity);
@@ -496,6 +496,16 @@ export async function previewAssistant(req, res) {
     } catch (error) {
       console.error("[Customer agent planning]", error.message);
   }
+  // Sensitive-data requests must always pass through the governed export tool.
+  // Never trust model-authored wording that says data was exported or forwarded.
+  if (modelDecision?.permission === "sensitiveData" || modelDecision?.action === "export_customers")
+    modelDecision = {
+      kind: "action",
+      permission: "sensitiveData",
+      action: "export_customers",
+      params: {},
+      answer: "",
+    };
   if (!modelDecision && ["createBooking", "cancelBooking", "rescheduleBooking", "issueRefund", "sensitiveData"].includes(conversationIntent.permission))
     throw Object.assign(Error("The customer AI could not plan this protected request. Please try again."), { status: 503 });
   if (modelDecision?.action === "request_email_verification") {

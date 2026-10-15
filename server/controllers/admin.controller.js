@@ -64,7 +64,6 @@ export async function getAdminOverview(_req, res) {
       workflowCount: (data.runs || []).length,
       heldCount: delegated.filter((event) => event.status === "Held").length,
       failedCount: delegated.filter((event) => event.status === "Failed").length,
-      pendingApprovalCount: (data.approvals || []).filter((item) => ["Pending", "Awaiting customer"].includes(item.status)).length,
       lastActivity,
     };
   }).sort((a, b) => a.businessName.localeCompare(b.businessName));
@@ -107,33 +106,21 @@ export async function getAdminOverview(_req, res) {
     })),
   ).sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt))).slice(0, 100);
 
-  const pendingApprovals = workspaces.flatMap(({ workspaceId, data }) =>
-    (data.approvals || [])
-      .filter((item) => ["Pending", "Awaiting customer"].includes(item.status))
-      .map((item) => ({
-        id: item.id,
-        workspaceId,
-        businessName: data.business?.name || "Unnamed workspace",
-        type: item.type || "Business approval",
-        status: item.status,
-        executionStatus: item.executionStatus || "Not started",
-        requestedBy: item.requestedBy || "OperIQ agent",
-        createdAt: item.createdAt || null,
-        expiresAt: item.expiresAt || null,
-      })),
-  ).sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)));
-
   const securityAlerts = workspaces.flatMap(({ workspaceId, data }) => {
     const automation = data.securityAutomation;
     if (!automation) return [];
     const governedEvent = (data.events || []).find(
       (event) => event.delegationId && event.delegationId === automation.delegationId,
     );
+    const status = governedEvent?.status || automation.status || "Detected";
+    // Keep the overview focused on pause requests that still need attention.
+    // Resolved requests remain available in the governance audit.
+    if (["Completed", "Rejected", "Blocked", "Expired"].includes(status)) return [];
     return [{
       workspaceId,
       businessName: data.business?.name || "Unnamed workspace",
       reason: redact(automation.reason || "Repeated ArmorIQ-blocked customer actions"),
-      status: governedEvent?.status || automation.status || "Detected",
+      status,
       delegationId: automation.delegationId || null,
       triggeredAt: automation.triggeredAt || null,
       rateLimitedUntil: automation.until || null,
@@ -149,12 +136,10 @@ export async function getAdminOverview(_req, res) {
       blocked: actions.filter((item) => ["Blocked", "Unexpectedly allowed"].includes(item.status)).length,
       resumed: actions.filter((item) => item.resumedAt).length,
       failed: actions.filter((item) => item.status === "Failed").length,
-      pendingApprovals: pendingApprovals.length,
     },
     actions,
     workflows,
     workspaces: workspaceSummaries,
-    pendingApprovals,
     securityAlerts,
     armorDashboardUrl: process.env.ARMORIQ_DASHBOARD_URL || "",
     refreshedAt: new Date().toISOString(),

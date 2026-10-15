@@ -17,11 +17,29 @@ import { startHoldRecoveryWorker } from "./services/hold-recovery.worker.js";
 const app = express();
 const port = process.env.PORT || 4000;
 const host = process.env.HOST || "0.0.0.0";
+const allowedOrigins = new Set(
+  String(process.env.CORS_ORIGINS || process.env.CLIENT_URL || "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean),
+);
 
 await connectDb();
 await initStore();
 startHoldRecoveryWorker();
 
+app.use((req, res, next) => {
+  const origin = String(req.headers.origin || "").replace(/\/$/, "");
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-OperIQ-Request-ID");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  }
+  if (req.method === "OPTIONS")
+    return allowedOrigins.has(origin) ? res.sendStatus(204) : res.sendStatus(403);
+  next();
+});
 app.use(express.json({ limit: "3mb" }));
 app.use(progressMiddleware);
 

@@ -34,7 +34,7 @@ function PausedAssistantBanner({ profile }) {
 function PageHeader({ page, businessName, canUseAgents, onAsk }) {
   const overview = page === "Overview";
   return (
-    <div className="page-heading flex items-center justify-between gap-5 mb-[30px] wide:mb-[38px] phone:items-start phone:flex-col phone:gap-[18px] !mt-4 !mx-0 !mb-[30px] [&_h1]:!text-[#0b1835] [&_h1]:!font-750 [&_h1]:!text-3xl [&_p]:!text-13 [&_p]:!text-[#71809b]">
+    <div className="page-heading flex items-center justify-between gap-5 mb-[30px] wide:mb-[38px] mobile:items-start mobile:flex-col mobile:gap-4 !mt-4 !mx-0 !mb-[30px] mobile:!mb-5 [&_h1]:!text-[#0b1835] [&_h1]:!font-750 [&_h1]:!text-3xl mobile:[&_h1]:!text-2xl [&_p]:!text-13 mobile:[&_p]:!text-sm [&_p]:!text-[#71809b]">
       <div>
         <div className="eyebrow text-caption tracking-[1.8px] font-650 mb-[11px] text-[#8892a5]">
           {overview ? "YOUR BUSINESS, IN MOTION" : businessName.toUpperCase()}
@@ -48,7 +48,7 @@ function PageHeader({ page, businessName, canUseAgents, onAsk }) {
       </div>
       {canUseAgents && (
         <button
-          className="primary inline-flex items-center justify-center gap-2 bg-orange text-white border border-orange rounded-lg text-xs py-3 px-4 shadow-[0_3px_7px_#ff550b0b]"
+          className="primary inline-flex items-center justify-center gap-2 bg-orange text-white border border-orange rounded-lg text-xs py-3 px-4 shadow-[0_3px_7px_#ff550b0b] mobile:w-full mobile:text-sm"
           onClick={onAsk}
         >
           <Sparkles size={16} /> Ask OperIQ{" "}
@@ -84,7 +84,7 @@ export function NotificationToast({ notice, onDismiss }) {
 export default function DashboardContent({ controller, children }) {
   const { data, page, error, canUseAgents, ask, start } = controller;
   return (
-    <div className="content max-w-[1660px] m-auto pt-[15px] px-10 pb-0 wide:pt-[7px] wide:px-[55px] laptop:pt-[15px] laptop:px-[26px] mobile:pt-[17px] mobile:px-4">
+    <div className="content m-auto max-w-[1660px] px-10 pb-0 pt-[15px] wide:px-[55px] wide:pt-[7px] laptop:px-[26px] laptop:pt-[15px] mobile:px-4 mobile:pt-3">
       <PausedAssistantBanner profile={data.aiProfile} />
       {page === "Overview" && (
         <OverviewHero

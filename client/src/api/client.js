@@ -3,6 +3,7 @@ import { beginRequest, finishRequest, updateRequest } from "./request-activity.j
 
 export const AUTH_TOKEN_KEY = "operiq-jwt";
 const LEGACY_AUTH_TOKEN_KEY = "opsdesk-jwt";
+export const API_BASE_URL = String(import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 
 export function readAuthToken() {
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -27,7 +28,7 @@ export function clearAuthToken() {
 }
 
 export const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
 });
 apiClient.interceptors.request.use((config) => {
@@ -42,7 +43,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 apiClient.interceptors.response.use(
-  async (response) => { const id=response.config.operiqRequestId;if(id){try{const final=await fetch(`/api/progress/${id}`);if(final.ok)updateRequest(id,await final.json())}catch{}finishRequest(id)}return response; },
+  async (response) => { const id=response.config.operiqRequestId;if(id){try{const final=await fetch(`${API_BASE_URL}/progress/${id}`);if(final.ok)updateRequest(id,await final.json())}catch{}finishRequest(id)}return response; },
   (error) => { if (error.config?.operiqRequestId) finishRequest(error.config.operiqRequestId); return Promise.reject(error); },
 );
 export const apiError = (error) =>

@@ -70,9 +70,9 @@ export default function AdminLayout({ onLogout }) {
     : "/";
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[245px_1fr]">
-      <aside className="flex items-center border-b border-[#e4e8ef] bg-white p-5 lg:fixed lg:inset-y-0 lg:left-0 lg:z-20 lg:w-[245px] lg:flex-col lg:items-stretch lg:border-b-0 lg:border-r lg:p-6">
+      <aside className="sticky top-0 z-40 flex flex-wrap items-center border-b border-[#e4e8ef] bg-white p-4 shadow-sm sm:p-5 lg:fixed lg:inset-y-0 lg:left-0 lg:w-[245px] lg:flex-col lg:flex-nowrap lg:items-stretch lg:border-b-0 lg:border-r lg:p-6 lg:shadow-none">
         <Brand />
-        <nav className="ml-auto flex gap-1 lg:ml-0 lg:mt-9 lg:block">
+        <nav className="order-3 mt-3 flex w-full gap-1 overflow-x-auto pb-1 lg:order-none lg:ml-0 lg:mt-9 lg:block lg:w-auto lg:overflow-visible lg:pb-0">
           {pages.map(([route, label, Icon]) => (
             <NavLink
               key={route}
@@ -80,11 +80,11 @@ export default function AdminLayout({ onLogout }) {
               end={route === "/"}
               title={label}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-3 text-xs font-bold no-underline lg:mb-1 lg:w-full ${isActive ? "bg-[#fff0e7] text-[#e2520b]" : "text-[#60708a] hover:bg-[#f7f8fb]"}`
+                `flex min-w-fit items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold no-underline lg:mb-1 lg:w-full lg:gap-3 lg:py-3 ${isActive ? "bg-[#fff0e7] text-[#e2520b]" : "text-[#60708a] hover:bg-[#f7f8fb]"}`
               }
             >
               <Icon size={18} />
-              <span className="hidden lg:inline">{label}</span>
+              <span className="whitespace-nowrap">{label}</span>
               {route === "/holds" && data?.metrics.held ? (
                 <b className="ml-auto rounded-full bg-[#fff0df] px-2 py-0.5 text-[9px] text-[#d4580e]">
                   {data.metrics.held}
@@ -103,14 +103,14 @@ export default function AdminLayout({ onLogout }) {
           </div>
         </div>
         <button
-          className="ml-2 flex items-center gap-2 rounded-xl border border-[#f0d7d7] bg-transparent p-3 text-xs font-bold text-[#bd4b55] lg:ml-0 lg:mt-3 lg:w-full"
+          className="ml-auto flex items-center gap-2 rounded-xl border border-[#f0d7d7] bg-transparent p-3 text-xs font-bold text-[#bd4b55] lg:ml-0 lg:mt-3 lg:w-full"
           onClick={onLogout}
         >
           <LogOut size={17} />
           <span className="hidden lg:inline">Sign out</span>
         </button>
       </aside>
-      <main className="p-5 lg:col-start-2 lg:px-11 lg:pb-6 lg:pt-10">
+      <main className="min-w-0 p-4 sm:p-5 lg:col-start-2 lg:px-11 lg:pb-6 lg:pt-10">
         <header className="flex items-start justify-between gap-6 max-sm:block">
           <div>
             <span className="text-[9px] font-black tracking-[1.7px] text-[#f05a12]">
@@ -124,7 +124,7 @@ export default function AdminLayout({ onLogout }) {
                 "Monitor governed actions without exposing business records."}
             </p>
           </div>
-          <div className="flex gap-2.5 max-sm:mt-4">
+          <div className="flex flex-wrap gap-2.5 max-sm:mt-4 max-sm:w-full max-sm:[&>*]:flex-1 max-sm:[&>*]:justify-center">
             {data?.armorDashboardUrl && (
               <a
                 className="inline-flex items-center gap-2 rounded-xl border border-[#ffceb6] bg-[#fff7f2] px-3.5 py-3 text-[11px] font-extrabold text-[#d84d08] no-underline"
