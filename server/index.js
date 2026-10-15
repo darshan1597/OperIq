@@ -15,6 +15,7 @@ import { readProgress } from "./controllers/progress.controller.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
+const host = process.env.HOST || "0.0.0.0";
 
 await connectDb();
 await initStore();
@@ -44,6 +45,6 @@ if (existsSync(clientDist)) {
 
 app.use(errorHandler);
 
-app.listen(port, "127.0.0.1", () => {
-  console.log(`OperIQ API: http://127.0.0.1:${port} (${integrationStatus().mode}; ${storageMode()})`);
+app.listen(port, host, () => {
+  console.log(`OperIQ API listening on ${host}:${port} (${integrationStatus().mode}; ${storageMode()})`);
 });

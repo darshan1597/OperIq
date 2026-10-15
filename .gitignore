@@ -6,6 +6,8 @@ coverage/
 # Local environment files
 .env
 .env.*
+!.env.example
+!**/.env.example
 
 # Credentials and private keys
 *-firebase-adminsdk-*.json
