@@ -10,6 +10,8 @@ import CustomersPage from "./pages/CustomersPage.jsx";
 import InvitePage from "./pages/InvitePage.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import OverviewPage from "./pages/OverviewPage.jsx";
+import OperIQStoryPage from "./pages/OperIQStoryPage.jsx";
+import OperIQFounderStoryPage from "./pages/OperIQFounderStoryPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import SchedulePage from "./pages/SchedulePage.jsx";
 import TeamTasksPage from "./pages/TeamTasksPage.jsx";
@@ -42,6 +44,9 @@ export default function App() {
 
   const portalSlug = getPortalSlug(location);
   if (portalSlug) return <BusinessPortalPage slug={portalSlug} />;
+
+  if (location.pathname === "/story") return <OperIQStoryPage />;
+  if (location.pathname === "/story/founder") return <OperIQFounderStoryPage />;
 
   const inviteToken = location.pathname.match(/^\/invite\/([a-f0-9-]+)\/?$/i)?.[1];
   if (inviteToken) {

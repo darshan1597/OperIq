@@ -246,11 +246,29 @@ export async function findInvitationByToken(token) {
   return null;
 }
 
-export async function acceptInvitationToken(workspaceId, token, accountId) {
+export async function acceptInvitationToken(workspaceId, token, accountId, memberName) {
   return mutate(workspaceId, (state) => {
     const invitation = state.invitations?.find((item) => item.token === token);
     if (!invitation || invitation.status !== "Pending")
       throw Object.assign(Error("This invitation is no longer available"), { status: 410 });
+    state.staff ||= [];
+    let staff = state.staff.find((item) => item.email?.toLowerCase() === invitation.email.toLowerCase());
+    if (staff) {
+      staff.name = memberName.trim();
+      staff.accountId = accountId;
+    } else {
+      staff = {
+        id: randomUUID(),
+        accountId,
+        name: memberName.trim(),
+        email: invitation.email.toLowerCase(),
+        skills: [],
+        status: "Available",
+        initials: memberName.trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+        color: "lavender",
+      };
+      state.staff.push(staff);
+    }
     invitation.status = "Accepted";
     invitation.accountId = accountId;
     invitation.acceptedAt = new Date().toISOString();

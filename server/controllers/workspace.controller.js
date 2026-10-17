@@ -11,6 +11,32 @@ import { reportProgress } from "../services/request-progress.service.js";
 export async function getWorkspace(req, res) {
   reportProgress("Loading workspace, team, appointments, and governance records");
   let [data, user, members] = await Promise.all([snapshot(req.user.id), findUserById(req.user.accountId), listWorkspaceMembers(req.user.id)]);
+  const directoryEmails = new Set((data.staff || []).map((person) => person.email?.toLowerCase()).filter(Boolean));
+  const missingMembers = members.filter((member) =>
+    member.role !== "owner" && member.email && !directoryEmails.has(member.email.toLowerCase()),
+  );
+  if (missingMembers.length) {
+    await mutate(req.user.id, (state) => {
+      state.staff ||= [];
+      const existingEmails = new Set(state.staff.map((person) => person.email?.toLowerCase()).filter(Boolean));
+      for (const member of missingMembers) {
+        const email = member.email.toLowerCase();
+        if (existingEmails.has(email)) continue;
+        state.staff.push({
+          id: randomUUID(),
+          accountId: String(member._id),
+          name: member.name,
+          email,
+          skills: [],
+          status: "Available",
+          initials: member.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+          color: "lavender",
+        });
+        existingEmails.add(email);
+      }
+    });
+    data = await snapshot(req.user.id);
+  }
   const obsoleteCustomerProposals = (data.approvals || []).filter((item) => {
     if (item.status !== "Awaiting customer") return false;
     const booking = data.appointments.find((row) => row.id === item.bookingId);

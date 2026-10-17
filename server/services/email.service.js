@@ -36,5 +36,10 @@ export async function sendWorkspaceInvitation({ email, role, token, businessName
     text: `You have been invited to join ${businessName} as ${role}. Accept your invitation: ${inviteUrl}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#0b1835"><h2>Join ${safeBusiness} on OperIQ</h2><p>You have been invited as <strong>${safeRole}</strong>.</p><p><a href="${inviteUrl}" style="display:inline-block;background:#ff560b;color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700">Accept invitation</a></p><p style="color:#71809b;font-size:13px">If you were not expecting this invitation, you can ignore this email.</p></div>`,
   });
+  const accepted = (info.accepted || []).map((recipient) => String(recipient).toLowerCase());
+  if (!accepted.includes(email.toLowerCase())) {
+    const rejected = (info.rejected || []).join(", ") || email;
+    throw Error(`Email provider did not accept invitation recipient: ${rejected}`);
+  }
   return { messageId: info.messageId, accepted: info.accepted };
 }

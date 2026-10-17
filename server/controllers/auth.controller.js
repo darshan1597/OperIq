@@ -101,6 +101,6 @@ export async function acceptInvitation(req, res) {
     role: record.invitation.role,
     passwordHash: await bcrypt.hash(input.password, 12),
   });
-  await acceptInvitationToken(record.workspaceId, req.params.token, String(user._id));
+  await acceptInvitationToken(record.workspaceId, req.params.token, String(user._id), input.name);
   return res.status(201).json({ token: signToken(user), user: publicUser(user) });
 }

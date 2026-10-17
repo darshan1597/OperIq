@@ -594,15 +594,24 @@ export async function previewAssistant(req, res) {
       if (permission === "approval") throw Object.assign(Error("New bookings require owner approval and cannot be confirmed automatically"), { status: 403 });
       const duration = durationMinutes(service.duration);
       let selectedParams = null;
+      const availabilityErrors = [];
       for (const staff of state.staff.filter((item) => item.status === "Available")) {
         const candidate = { customerId: verified.customer.id, staffId: staff.id, date: bookingRequest.date, time: bookingRequest.time, service: service.name, duration };
         try {
           validateBooking(state, candidate);
           selectedParams = candidate;
           break;
-        } catch { /* Try another qualified staff member. */ }
+        } catch (error) {
+          availabilityErrors.push(error.message);
+        }
       }
-      if (!selectedParams) throw Object.assign(Error("No qualified staff member is available at that date and time"), { status: 422 });
+      if (!selectedParams) {
+        if (availabilityErrors.some((message) => message.startsWith("Appointments must be within")))
+          throw Object.assign(Error("That time is outside the booking hours. Appointments must be between 09:00 and 18:00. Please choose another time."), { status: 422 });
+        if (availabilityErrors.length && availabilityErrors.every((message) => message.includes("conflicts with an existing booking")))
+          throw Object.assign(Error("That time is already booked. Please choose another available time."), { status: 422 });
+        throw Object.assign(Error("No staff member is available at that date and time"), { status: 422 });
+      }
       step.params = selectedParams;
       step.explanation = `Create a verified ${service.name} booking after availability validation.`;
     }

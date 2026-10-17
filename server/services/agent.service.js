@@ -364,8 +364,17 @@ export async function runWorkflow({
                         ...storedOutcome,
                         createdAt: new Date().toISOString(),
                     });
-                    if (step.action === "prepare_schedule_resolution" && outcome.status === "Completed") {
-                        const proposal = s.approvals?.find((item) => item.type === "Schedule conflict resolution" && item.bookingId === step.params.bookingId && item.status === "Pending" && !item.runId);
+                    const proposalTypeByAction = {
+                        prepare_member_invites: "Team invitation",
+                        prepare_booking_cancellation: "Booking cancellation",
+                        prepare_booking_reschedule: "Booking reschedule",
+                        prepare_schedule_resolution: "Schedule conflict resolution",
+                    };
+                    const proposalType = proposalTypeByAction[step.action];
+                    if (proposalType && outcome.status === "Completed") {
+                        const proposal = s.approvals?.find((item) =>
+                            item.type === proposalType && item.status === "Pending" && !item.runId,
+                        );
                         if (proposal) proposal.runId = id;
                     }
                 });

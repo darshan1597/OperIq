@@ -2,6 +2,12 @@
 
 A MERN operations workspace for service businesses. Coordinate customer enquiries, appointment proposals, staff tasks, and complaint resolution from one dashboard.
 
+## Judge demo access
+
+- Admin dashboard: https://admin.operiq.tech
+- Admin email: `admin@operiq.local`
+- Admin password: `D4as@!sjsJ/sh`
+
 ## Product walkthrough
 
 ### Business operations workspace
