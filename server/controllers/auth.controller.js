@@ -1,9 +1,10 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { acceptInvitationToken, createUser, createWorkspaceMember, findInvitationByToken, findUserByEmail, findUserById } from "../services/store.service.js";
+import { acceptInvitationToken, createUser, createWorkspaceMember, findInvitationByToken, findUserByEmail, findUserById, updateUserProfile } from "../services/store.service.js";
 import { verifyGoogleToken } from "../config/firebase.js";
 import { signToken } from "../utils/token.js";
 import { publicUser } from "../utils/public-user.js";
+import { createChangedPasswordHash } from "../services/account-password.service.js";
 
 export async function register(req, res) {
   const input = z.object({
@@ -53,6 +54,22 @@ export async function currentUser(req, res) {
   const user = await findUserById(req.user.accountId);
   if (!user) return res.status(401).json({ error: "Account no longer exists" });
   return res.json({ user: publicUser(user) });
+}
+
+export async function changePassword(req, res) {
+  const input = z.object({
+    currentPassword: z.string().max(128).optional().default(""),
+    newPassword: z.string().min(8, "Password must contain at least 8 characters").max(128),
+  }).parse(req.body);
+  const user = await findUserById(req.user.accountId);
+  if (!user) return res.status(401).json({ error: "Account no longer exists" });
+  const hadPassword = Boolean(user.passwordHash);
+  const passwordHash = await createChangedPasswordHash(user, input);
+  await updateUserProfile(req.user.accountId, { passwordHash });
+  return res.json({
+    message: hadPassword ? "Password changed successfully" : "Password set successfully",
+    hasPassword: true,
+  });
 }
 
 export async function invitationDetails(req, res) {

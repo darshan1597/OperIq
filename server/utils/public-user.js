@@ -6,4 +6,5 @@ export const publicUser = (user) => ({
     role: user.role || "owner",
     workspaceId: String(user.workspaceId || user._id),
     createdAt: user.createdAt,
+    hasPassword: Boolean(user.passwordHash),
 });
