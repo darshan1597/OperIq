@@ -80,7 +80,7 @@ export default function LandingPage({ navigate, authenticated = false }) {
                     <a href="#security">Security</a>
                     <a href="#pricing">Pricing</a>
                 </nav>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mobile:ml-auto">
                     {authenticated ? (
                         <button
                             onClick={() => navigate("/app")}

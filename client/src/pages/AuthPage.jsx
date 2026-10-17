@@ -126,7 +126,7 @@ export default function AuthPage({ mode, onAuthenticated, navigate }) {
     return (
         <main className="min-h-screen bg-[radial-gradient(circle_at_top,#fff9f4,transparent_55%),#f8f7f5] p-5 font-ui text-navy mobile:p-0">
             <div className="relative mx-auto grid min-h-[calc(100vh-42px)] max-w-[1460px] grid-cols-[42%_58%] overflow-hidden rounded-[26px] border border-white bg-white shadow-[0_25px_90px_#59341d16] compact:grid-cols-1 mobile:min-h-screen mobile:rounded-none">
-                <section className="relative z-10 flex flex-col bg-white px-14 py-8 laptop:px-9 mobile:px-5 mobile:py-7">
+                <section className="relative z-10 flex flex-col bg-white px-14 py-8 laptop:px-9 mobile:min-h-screen mobile:px-5 mobile:py-7">
                     <div className="flex items-center justify-between">
                         <button
                             onClick={() => navigate("/")}
@@ -145,9 +145,20 @@ export default function AuthPage({ mode, onAuthenticated, navigate }) {
                                 </button>
                             </p>
                         )}
+                        {signup && (
+                            <p className="hidden text-xs text-[#4f6080] compact:block">
+                                Already have an account?{" "}
+                                <button
+                                    onClick={() => navigate("/login")}
+                                    className="border-0 bg-transparent p-1 font-bold text-orange"
+                                >
+                                    Log in
+                                </button>
+                            </p>
+                        )}
                     </div>
                     <div
-                        className={`mx-auto w-full max-w-[480px] ${signup ? "mt-7" : "mt-16"} laptop:mt-7`}
+                        className={`mx-auto w-full max-w-[480px] ${signup ? "mt-7" : "mt-16"} laptop:mt-7 mobile:my-auto mobile:py-6`}
                     >
                         <h1 className="text-[36px] font-extrabold leading-tight tracking-[-1.4px] mobile:text-3xl">
                             {signup ? "Create your account" : "Welcome back"}
